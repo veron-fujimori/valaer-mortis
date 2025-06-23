@@ -103,4 +103,16 @@ public class MiningAreaDao {
         }
         return 0;
     }
+
+    public boolean deleteMiningArea(long id) {
+        try (Connection conn = DB.getInstance().getConnection();
+                PreparedStatement ps = conn.prepareStatement(
+                        "DELETE FROM mining_areas WHERE id = ?")) {
+            ps.setLong(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            ErrorHandler.logDatabaseError("deleting mining area", e);
+        }
+        return false;
+    }
 }

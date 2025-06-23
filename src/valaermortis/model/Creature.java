@@ -10,15 +10,12 @@ public class Creature {
   private int rewardWood;
   private int rewardStone;
   private int maxBattleTime;
-  private String spawnedAt;
-  private boolean isAlive;
 
   public Creature() {
   }
 
   public Creature(long id, int level, int maxHp, int attackPower, int distance,
-      int rewardFood, int rewardWood, int rewardStone, int maxBattleTime,
-      String spawnedAt, boolean isAlive) {
+      int rewardFood, int rewardWood, int rewardStone, int maxBattleTime) {
     this.id = id;
     this.level = level;
     this.maxHp = maxHp;
@@ -28,8 +25,6 @@ public class Creature {
     this.rewardWood = rewardWood;
     this.rewardStone = rewardStone;
     this.maxBattleTime = maxBattleTime;
-    this.spawnedAt = spawnedAt;
-    this.isAlive = isAlive;
   }
 
   public long getId() {
@@ -102,22 +97,6 @@ public class Creature {
 
   public void setMaxBattleTime(int maxBattleTime) {
     this.maxBattleTime = maxBattleTime;
-  }
-
-  public String getSpawnedAt() {
-    return spawnedAt;
-  }
-
-  public void setSpawnedAt(String spawnedAt) {
-    this.spawnedAt = spawnedAt;
-  }
-
-  public boolean isAlive() {
-    return isAlive;
-  }
-
-  public void setAlive(boolean alive) {
-    isAlive = alive;
   }
 
   public String getName() {

@@ -70,10 +70,10 @@ public class Menu {
         System.out.println(TerminalArt.white("[1] Upgrade Townhall"));
         System.out.println(TerminalArt.white("[2] Build/Upgrade Barrack"));
         System.out.println(TerminalArt.white("[3] Upgrade Storage"));
-        System.out.println(TerminalArt.white("[4] Latih Pasukan"));
-        System.out.println(TerminalArt.white("[5] Kirim Pasukan: Mining"));
-        System.out.println(TerminalArt.white("[6] Kirim Pasukan: Attack Creature"));
-        System.out.println(TerminalArt.white("[7] Cek Status Pasukan & Misi"));
+        System.out.println(TerminalArt.white("[4] Train Troops"));
+        System.out.println(TerminalArt.white("[5] Send Troops: Mining"));
+        System.out.println(TerminalArt.white("[6] Send Troops: Attack Creature"));
+        System.out.println(TerminalArt.white("[7] Check Mission Status"));
         System.out.println(TerminalArt.white("[8] Messages"));
         System.out.println(TerminalArt.white("[9] Logout"));
 
@@ -106,7 +106,7 @@ public class Menu {
                 break;
             case 9:
                 InputUtil.clearTerminal();
-                InputUtil.displaySuccess("Logout berhasil. Sampai jumpa, " + user.getUsername() + "!");
+                InputUtil.displaySuccess("Logout successful. Goodbye, " + user.getUsername() + "!");
                 TerminalArt.resetTerminalColors();
                 TerminalArt.exitFullScreen();
                 ctx.setCurrentUser(null);
@@ -182,7 +182,8 @@ public class Menu {
         if (success) {
             showBarrackConstructionProgress(selectedType);
         } else {
-            InputUtil.displayError("Failed to start barrack construction.");
+            InputUtil.pressEnterToContinue();
+
         }
     }
 
@@ -274,7 +275,6 @@ public class Menu {
             InputUtil.pressEnterToContinue();
             return;
         }
-
         boolean confirm = InputUtil.readConfirmation("\nConfirm upgrade? (y/n)");
         if (!confirm) {
             InputUtil.displayInfo("Upgrade cancelled.");
@@ -284,6 +284,7 @@ public class Menu {
         if (!ctx.resourceService.hasEnoughResources(cost)) {
             InputUtil.displayError("Not enough resources for upgrade!");
             ctx.resourceService.displayResourceComparison(cost.food, cost.wood, cost.stone);
+            InputUtil.pressEnterToContinue();
             return;
         }
         boolean success = ctx.buildingService.upgradeTownhall();
@@ -531,7 +532,6 @@ public class Menu {
                 InputUtil.displayError("Storage is already at maximum level!");
             } else {
                 InputUtil.displayError("Storage is already at maximum level for your townhall!");
-                InputUtil.displayInfo("Current level: " + currentLevel + ", Max level: " + maxLevel);
                 InputUtil.displayInfo("Upgrade your townhall to unlock higher storage levels.");
             }
             InputUtil.pressEnterToContinue();
@@ -547,6 +547,7 @@ public class Menu {
         if (!ctx.resourceService.hasEnoughResources(cost)) {
             InputUtil.displayError("Not enough resources for upgrade!");
             ctx.resourceService.displayResourceComparison(cost.food, cost.wood, cost.stone);
+            InputUtil.pressEnterToContinue();
             return;
         }
         boolean success = ctx.buildingService.upgradeStorage();
@@ -559,6 +560,7 @@ public class Menu {
             }
         } else {
             InputUtil.displayError("Failed to start storage upgrade.");
+            InputUtil.pressEnterToContinue();
         }
     }
 
@@ -702,7 +704,7 @@ public class Menu {
         }
         int maxLevel = GameConfig.getMaxBarrackLevel(townhallLevel);
         if (selectedBarrack.getLevel() >= maxLevel) {
-            InputUtil.displayError("This barrack is already at maximum level for your townhall!");
+            InputUtil.displayError("\nThis barrack is already at maximum level for your townhall!");
             InputUtil.displayInfo(
                     "Upgrade your townhall to level " + (townhallLevel + 1) + " to unlock higher barrack levels.");
             InputUtil.pressEnterToContinue();
@@ -741,14 +743,15 @@ public class Menu {
         if (!ctx.resourceService.hasEnoughResources(cost)) {
             InputUtil.displayError("Not enough resources for upgrade!");
             ctx.resourceService.displayResourceComparison(cost.food, cost.wood, cost.stone);
+            InputUtil.pressEnterToContinue();
             return;
         }
         boolean success = ctx.buildingService.upgradeBarrack(selectedBarrack);
         if (success) {
-
             showBarrackUpgradeProgress(selectedBarrack, currentLevel, nextLevel);
         } else {
             InputUtil.displayError("Failed to start barrack upgrade.");
+            InputUtil.pressEnterToContinue();
         }
     }
 

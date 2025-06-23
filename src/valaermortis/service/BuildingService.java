@@ -229,19 +229,19 @@ public class BuildingService {
     public boolean buildBarrack(BuildingType type) {
         List<BuildingType> available = getAvailableBarracksToBuild();
         if (!available.contains(type)) {
-            System.out.println(TerminalArt.red("Cannot build this barrack type!"));
+            System.out.println(TerminalArt.red("\nCannot build this barrack type!"));
             return false;
         }
 
         GameConfig.BuildCost cost = GameConfig.getBarrackBuildCost(type);
-
         if (!resourceService.hasEnoughResources(cost)) {
-            System.out.println(TerminalArt.red("Not enough resources!"));
+            System.out.println(TerminalArt.red("\nNot enough resources!"));
+            resourceService.displayResourceComparison(cost.food, cost.wood, cost.stone);
             return false;
         }
 
         if (!resourceService.deductResources(cost)) {
-            System.out.println(TerminalArt.red("Failed to deduct resources!"));
+            System.out.println(TerminalArt.red("\nFailed to deduct resources!"));
             return false;
         }
 

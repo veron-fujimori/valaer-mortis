@@ -105,9 +105,7 @@ public class MissionService {
             return false;
         }
 
-        InputUtil.printSectionSeparator("MINING MISSION SETUP");
-
-        InputUtil.printSubsectionSeparator("Mining Area Information");
+        InputUtil.printSectionSeparator("MINING Area Information");
         System.out.println("Resource Type: " + miningArea.getResourceType());
         System.out.println("Area Level: " + miningArea.getAreaLevel());
         System.out.println("Available Stock: " + miningArea.getCurrentStock() + " resources");
@@ -125,12 +123,10 @@ public class MissionService {
         } else {
             stockStatus = "DEPLETED";
         }
-
         System.out.println("Stock Status: " + stockStatus + " (" + String.format("%.1f", stockPercentage) + "%)");
-
-        Map<UnitType, Integer> selectedUnits = selectUnitsForMission(availableUnits);
+        Map<UnitType, Integer> selectedUnits = selectUnitsForMission(availableUnits, MissionType.MINING);
         if (selectedUnits.isEmpty()) {
-            System.out.println("Mission cancelled.");
+            InputUtil.pressEnterToContinue();
             return false;
         }
         int totalCarryCapacity = calculateTotalCarryCapacity(selectedUnits);
@@ -150,21 +146,19 @@ public class MissionService {
                 " (" + miningArea.getDistance() + " units away)");
 
         System.out.println();
-        boolean confirm = InputUtil.readConfirmation("Start mining mission? (y/n): ");
+        boolean confirm = InputUtil.readConfirmation("Start mining mission? (y/n)");
         if (!confirm) {
-            System.out.println("Mission cancelled.");
+            System.out.println("\nMission cancelled");
             return false;
         }
         if (!unitService.deployUnitsForMission(selectedUnits)) {
             InputUtil.displayError("Failed to deploy units!");
             return false;
         }
-
         Mission mission = new Mission();
         mission.setUserId(ctx.getCurrentUserId());
         mission.setType(MissionType.MINING);
         mission.setStatus(MissionStatus.IN_PROGRESS);
-        mission.setMiningAreaId(miningArea.getId());
         mission.setStartTime(Timestamp.valueOf(LocalDateTime.now()));
         mission.setEndTime(Timestamp.valueOf(LocalDateTime.now().plusSeconds(missionTimeSeconds)));
 
@@ -182,17 +176,22 @@ public class MissionService {
                 unitService.returnUnitsFromMission(selectedUnits);
                 return false;
             }
-
             try {
                 missionUnitsDao.createMissionUnits(mission.getId(), selectedUnits);
+
+                long newStock = Math.max(0, miningArea.getCurrentStock() - resourcesWillMine);
+                miningAreaDao.updateStock(miningArea.getId(), newStock);
+
+                if (newStock <= 0) {
+                    miningAreaDao.deleteMiningArea(miningArea.getId());
+                    InputUtil.displayInfo("Mining area completely depleted and removed! Generating new area...");
+                    generateNewMiningArea();
+                }
 
                 missionResultsDao.createMissionResult(mission.getId(),
                         miningArea.getResourceType() == ResourceType.FOOD ? (int) resourcesWillMine : 0,
                         miningArea.getResourceType() == ResourceType.WOOD ? (int) resourcesWillMine : 0,
                         miningArea.getResourceType() == ResourceType.STONE ? (int) resourcesWillMine : 0, true);
-
-                InputUtil
-                        .displaySuccess("Mining mission started! Will complete in " + missionTimeSeconds + " seconds.");
                 return true;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -263,17 +262,8 @@ public class MissionService {
         System.out.println("Potential Rewards: " + creature.getRewardFood() + "/" +
                 creature.getRewardWood() + "/" + creature.getRewardStone());
         System.out.println("Distance: " + creature.getDistance() + " units");
-
-        System.out.println("\nAvailable units:");
-        for (Map.Entry<UnitType, Integer> entry : availableUnits.entrySet()) {
-            GameConfig.UnitStats stats = GameConfig.getUnitStats(entry.getKey());
-            System.out.println("  " + entry.getKey() + ": " + entry.getValue() +
-                    " (Attack: " + stats.attack + ", HP: " + stats.hp + ")");
-        }
-
-        Map<UnitType, Integer> selectedUnits = selectUnitsForMission(availableUnits);
+        Map<UnitType, Integer> selectedUnits = selectUnitsForMission(availableUnits, MissionType.ATTACK);
         if (selectedUnits.isEmpty()) {
-            System.out.println("Mission cancelled.");
             return false;
         }
 
@@ -282,26 +272,24 @@ public class MissionService {
         int missionTimeSeconds = calculateAttackTime(creature.getDistance(), selectedUnits,
                 creature.getMaxBattleTime());
 
-        System.out.println("\nBattle Simulation:");
+        InputUtil.printSectionSeparator("Battle Prediction");
         System.out.println("Victory Chance: " + (battleResult.victory ? "VICTORY" : "DEFEAT"));
         System.out.println("Estimated Losses: "
                 + battleResult.unitsLost.values().stream().mapToInt(Integer::intValue).sum() + " units");
         System.out.println("Mission Time: " + missionTimeSeconds + " seconds");
-        boolean confirm = InputUtil.readConfirmation("Start attack mission? (y/n): ");
+        boolean confirm = InputUtil.readConfirmation("Start attack mission? (y/n)");
         if (!confirm) {
-            System.out.println("Mission cancelled.");
+            System.out.println("Mission cancelled");
             return false;
         }
         if (!unitService.deployUnitsForMission(selectedUnits)) {
             InputUtil.displayError("Failed to deploy units!");
             return false;
         }
-
         Mission mission = new Mission();
         mission.setUserId(ctx.getCurrentUserId());
         mission.setType(MissionType.ATTACK);
         mission.setStatus(MissionStatus.IN_PROGRESS);
-        mission.setCreatureId(creature.getId());
         mission.setStartTime(Timestamp.valueOf(LocalDateTime.now()));
         mission.setEndTime(Timestamp.valueOf(LocalDateTime.now().plusSeconds(missionTimeSeconds)));
         if (missionDao.create(mission)) {
@@ -310,7 +298,6 @@ public class MissionService {
                 unitService.returnUnitsFromMission(selectedUnits);
                 return false;
             }
-
             missionUnitsDao.createMissionUnits(mission.getId(), selectedUnits);
 
             int foodReward = battleResult.victory ? creature.getRewardFood() : 0;
@@ -321,6 +308,11 @@ public class MissionService {
 
             missionUnitsDao.updateMissionUnitsResult(mission.getId(), battleResult.unitsLost,
                     battleResult.survivingUnits);
+            if (battleResult.victory) {
+                creatureDao.deleteCreature(creature.getId());
+                generateNewCreature();
+                InputUtil.displayInfo("Creature defeated! New creature spawned.");
+            }
 
             InputUtil.displaySuccess("Attack mission started! Will complete in " + missionTimeSeconds + " seconds.");
             return true;
@@ -331,7 +323,8 @@ public class MissionService {
         }
     }
 
-    private Map<UnitType, Integer> selectUnitsForMission(Map<UnitType, Integer> availableUnits) {
+    private Map<UnitType, Integer> selectUnitsForMission(Map<UnitType, Integer> availableUnits,
+            MissionType missionType) {
         Map<UnitType, Integer> selectedUnits = new HashMap<>();
 
         for (UnitType unitType : availableUnits.keySet()) {
@@ -344,14 +337,21 @@ public class MissionService {
             System.out.println();
             System.out.println(unitType + " Selection:");
             System.out.println("- Available Units: " + available);
-            System.out.println("- Carry Capacity: " + stats.carryCapacity + " per unit");
-            System.out.println("- Max Total Load: " + (stats.carryCapacity * available) + " resources");
+
+            if (missionType == MissionType.MINING) {
+                System.out.println("- Carry Capacity: " + stats.carryCapacity + " per unit");
+                System.out.println("- Max Total Load: " + (stats.carryCapacity * available) + " resources");
+            } else if (missionType == MissionType.ATTACK) {
+                System.out.println("- Attack Power: " + stats.attackPower + " per unit");
+                System.out.println("- Speed: " + stats.speed);
+                System.out.println("- HP: " + stats.hp + " per unit");
+            }
             while (true) {
                 String input = InputUtil
-                        .readString("How many " + unitType + "s to deploy? (0-" + available + ", or 'cancel')");
+                        .readString("\nHow many " + unitType + "s to deploy? (0-" + available + ", or 'cancel')");
 
                 if (input.equalsIgnoreCase("cancel")) {
-                    System.out.println("Mission cancelled by user.");
+                    System.out.println("\nMission cancelled");
                     return new HashMap<>();
                 }
 
@@ -363,7 +363,6 @@ public class MissionService {
                     }
                     if (count > 0) {
                         selectedUnits.put(unitType, count);
-                        System.out.println("Selected " + count + " " + unitType + "(s)");
                     } else {
                         System.out.println("  Skipped " + unitType);
                     }
@@ -376,12 +375,7 @@ public class MissionService {
             System.out.println();
         }
 
-        if (!selectedUnits.isEmpty()) {
-            InputUtil.printSubsectionSeparator("Selection Confirmed");
-            for (Map.Entry<UnitType, Integer> entry : selectedUnits.entrySet()) {
-                System.out.println(entry.getKey() + ": " + entry.getValue() + " units");
-            }
-        } else {
+        if (selectedUnits.isEmpty()) {
             System.out.println("No units selected for mission.");
         }
         return selectedUnits;
@@ -437,18 +431,12 @@ public class MissionService {
         } else {
             returningUnits = missionUnitsDao.getMissionUnits(mission.getId());
         }
-
-        if (mission.getType() == MissionType.MINING && mission.getMiningAreaId() != null) {
-            handleMiningAreaDepletion(mission, missionResult);
+        if (mission.getType() == MissionType.MINING) {
+            handleMiningMissionCompletion(mission, missionResult);
         }
 
-        if (mission.getType() == MissionType.ATTACK && mission.getCreatureId() != null) {
-            if (missionResult != null && missionResult.isSuccess()) {
-                creatureDao.killCreature(mission.getCreatureId());
-                InputUtil.displaySuccess("Creature defeated! Generating new creature...");
-
-                generateNewCreature();
-            }
+        if (mission.getType() == MissionType.ATTACK) {
+            handleAttackMissionCompletion(mission, missionResult);
         }
 
         if (missionResult != null && (missionResult.getFoodGained() > 0 || missionResult.getWoodGained() > 0
@@ -465,31 +453,20 @@ public class MissionService {
         return missionDao.update(mission);
     }
 
-    private void handleMiningAreaDepletion(Mission mission, MissionResultsDao.MissionResult missionResult) {
-        Long miningAreaId = mission.getMiningAreaId();
-        if (miningAreaId == null)
-            return;
-        MiningArea area = miningAreaDao.findById(miningAreaId);
-        if (area == null)
-            return;
-
-        int resourcesMined = 0;
-        if (missionResult != null) {
-            resourcesMined = missionResult.getFoodGained() + missionResult.getWoodGained()
-                    + missionResult.getStoneGained();
-        }
-        long newStock = Math.max(0, area.getCurrentStock() - resourcesMined);
-
-        if (newStock <= 0) {
-            miningAreaDao.updateStock(miningAreaId, 0);
-            InputUtil.displayInfo("Mining area depleted! Generating new area...");
-
-            generateNewMiningArea();
-        } else {
-            miningAreaDao.updateStock(miningAreaId, newStock);
-        }
+    private void handleMiningMissionCompletion(Mission mission, MissionResultsDao.MissionResult missionResult) {
+        generateNewMiningAreaIfNeeded();
     }
 
+    private void handleAttackMissionCompletion(Mission mission, MissionResultsDao.MissionResult missionResult) {
+        generateNewCreatureIfNeeded();
+    }
+
+    private void generateNewMiningAreaIfNeeded() {
+        int currentActiveCount = miningAreaDao.countActiveAreas();
+        if (currentActiveCount < 5) {
+            generateNewMiningArea();
+        }
+    } 
     private void generateNewMiningArea() {
         int currentActiveCount = miningAreaDao.countActiveAreas();
 
@@ -633,10 +610,9 @@ public class MissionService {
         }
 
         int distance = 1 + (int) (Math.random() * 3);
-
         try (Connection conn = DB.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO creatures (level, max_hp, attack_power, distance, reward_food, reward_wood, reward_stone, max_battle_time, is_alive) VALUES (?, ?, ?, ?, ?, ?, ?, ?, true)")) {
+                        "INSERT INTO creatures (level, max_hp, attack_power, distance, reward_food, reward_wood, reward_stone, max_battle_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
             ps.setInt(1, creatureLevel);
             ps.setInt(2, hp);
             ps.setInt(3, attackPower);
@@ -645,11 +621,20 @@ public class MissionService {
             ps.setInt(6, rewardWood);
             ps.setInt(7, rewardStone);
             ps.setInt(8, maxBattleTime);
-            if (ps.executeUpdate() > 0) {
-                InputUtil.displayInfo("New Level " + creatureLevel + " creature has spawned!");
+
+            int result = ps.executeUpdate();
+            if (result > 0) {
+                System.out.println("New creature level " + creatureLevel + " generated successfully!");
             }
         } catch (SQLException e) {
             ErrorHandler.logDatabaseError("generating new creature", e);
+        }
+    }
+
+    private void generateNewCreatureIfNeeded() {
+        List<Creature> availableCreatures = creatureDao.findAliveCreatures();
+        if (availableCreatures.size() < 3) {
+            generateNewCreature();
         }
     }
 
@@ -730,17 +715,7 @@ public class MissionService {
         StringBuilder info = new StringBuilder();
         info.append(mission.getType().toString());
 
-        if (mission.getType() == MissionType.MINING && mission.getMiningAreaId() != null) {
-            MiningArea area = miningAreaDao.findById(mission.getMiningAreaId());
-            if (area != null) {
-                info.append(" (").append(area.getResourceType()).append(" Lv").append(area.getAreaLevel()).append(")");
-            }
-        } else if (mission.getType() == MissionType.ATTACK && mission.getCreatureId() != null) {
-            Creature creature = creatureDao.findById(mission.getCreatureId());
-            if (creature != null) {
-                info.append(" (").append(creature.getName()).append(" Lv").append(creature.getLevel()).append(")");
-            }
-        }
+
         return info.toString();
     }
 
@@ -797,32 +772,6 @@ public class MissionService {
                 }
             }
 
-            List<Mission> activeMissions = missionDao.getActiveMissions(ctx.getCurrentUserId());
-            if (!activeMissions.isEmpty()) {
-                InputUtil.printSubsectionSeparator("Units Currently on Missions");
-                for (Mission mission : activeMissions) {
-                    Map<UnitType, Integer> missionUnits = missionUnitsDao.getMissionUnits(mission.getId());
-                    if (!missionUnits.isEmpty()) {
-                        int totalUnits = missionUnits.values().stream().mapToInt(Integer::intValue).sum();
-                        String missionInfo = getMissionDisplayInfo(mission);
-
-                        LocalDateTime endTime = mission.getEndTime().toLocalDateTime();
-                        LocalDateTime now = LocalDateTime.now();
-                        long remainingSeconds = ChronoUnit.SECONDS.between(now, endTime);
-                        if (remainingSeconds > 0) {
-                            long minutes = remainingSeconds / 60;
-                            long seconds = remainingSeconds % 60;
-                            String timeDisplay = String.format("%d:%02d", minutes, seconds);
-                            System.out.println("- " + totalUnits + " units on " + missionInfo + " (" + timeDisplay
-                                    + " remaining)");
-                        } else {
-                            System.out.println("- " + totalUnits + " units on " + missionInfo + " (RETURNING)");
-                        }
-                    }
-                }
-            }
-            InputUtil.displayInfo("Live update active. Press any key to start a mission or return to menu.");
-
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -848,11 +797,9 @@ public class MissionService {
         InputUtil.clearTerminal();
         TerminalArt.printMainHeader(ctx.getCurrentUser(), ctx.gameService.getGameState());
 
-        InputUtil.printSectionSeparator("ATTACK TARGETS STATUS");
-
+        InputUtil.printSectionSeparator("CREATURES TO ATTACK");
         int townhallLevel = resourceService.getCurrentResources().getTownhallLvl();
         List<Creature> creatures = creatureDao.getAvailableCreatures(townhallLevel);
-        Map<UnitType, Integer> availableUnits = unitService.getAvailableUnitsForMission();
 
         if (creatures.isEmpty()) {
             InputUtil.displayError("No creatures available to attack!");
@@ -860,7 +807,6 @@ public class MissionService {
             return;
         }
 
-        InputUtil.printSubsectionSeparator("Available Creatures to Attack");
         for (int i = 0; i < creatures.size(); i++) {
             Creature creature = creatures.get(i);
             System.out.println("[" + (i + 1) + "] " + creature.getName() + " Level " + creature.getLevel() +
@@ -868,48 +814,6 @@ public class MissionService {
                     " - Rewards: " + creature.getRewardFood() + "/" +
                     creature.getRewardWood() + "/" + creature.getRewardStone() +
                     " - Distance: " + creature.getDistance() + " units");
-        }
-
-        InputUtil.printSubsectionSeparator("Available Units for Missions");
-        if (availableUnits.isEmpty()) {
-            List<UnitQueue> completedQueues = unitQueueDao.getCompletedQueues(ctx.getCurrentUserId());
-            if (!completedQueues.isEmpty()) {
-                InputUtil.displayError("No units available! Collect " + completedQueues.size()
-                        + " completed training queue(s) first.");
-            } else {
-                InputUtil.displayError("No units available! Train units first.");
-            }
-        } else {
-            for (Map.Entry<UnitType, Integer> entry : availableUnits.entrySet()) {
-                GameConfig.UnitStats stats = GameConfig.getUnitStats(entry.getKey());
-                System.out.println("- " + entry.getKey() + ": " + entry.getValue() +
-                        " (Attack: " + stats.attack + ", HP: " + stats.hp + ")");
-            }
-        }
-
-        List<Mission> activeMissions = missionDao.getActiveMissions(ctx.getCurrentUserId());
-        if (!activeMissions.isEmpty()) {
-            InputUtil.printSubsectionSeparator("Units Currently on Missions");
-            for (Mission mission : activeMissions) {
-                Map<UnitType, Integer> missionUnits = missionUnitsDao.getMissionUnits(mission.getId());
-                if (!missionUnits.isEmpty()) {
-                    int totalUnits = missionUnits.values().stream().mapToInt(Integer::intValue).sum();
-                    String missionInfo = getMissionDisplayInfo(mission);
-
-                    LocalDateTime endTime = mission.getEndTime().toLocalDateTime();
-                    LocalDateTime now = LocalDateTime.now();
-                    long remainingSeconds = ChronoUnit.SECONDS.between(now, endTime);
-                    if (remainingSeconds > 0) {
-                        long minutes = remainingSeconds / 60;
-                        long seconds = remainingSeconds % 60;
-                        String timeDisplay = String.format("%d:%02d", minutes, seconds);
-                        System.out.println("- " + totalUnits + " units on " + missionInfo + " (" + timeDisplay
-                                + " remaining)");
-                    } else {
-                        System.out.println("- " + totalUnits + " units on " + missionInfo + " (RETURNING)");
-                    }
-                }
-            }
         }
 
         System.out.println("[0] Cancel");

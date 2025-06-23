@@ -35,8 +35,6 @@ public class MessageService {
 
         List<Message> messages = messageDao.getRecentMessages(userId, 50);
 
-        System.out.println(TerminalArt.cyan("=== YOUR MESSAGES ==="));
-
         if (messages.isEmpty()) {
             System.out.println("No messages yet.");
             return;
@@ -53,8 +51,6 @@ public class MessageService {
             System.out.println(TerminalArt.cyan("Time: " + createdAt.format(formatter)));
             System.out.println("-".repeat(50));
         }
-
-        System.out.println(TerminalArt.cyan("=== END OF MESSAGES ==="));
     }
 
     public int getMessageCount() {

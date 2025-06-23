@@ -114,22 +114,22 @@ public class UnitService {
         }
     }
 
-    public boolean trainUnits(Building barrack, int quantity) {
+    public UnitQueue trainUnits(Building barrack, int quantity) {
         if (barrack.getUpgradeEndTime() != null) {
-            InputUtil.displayError("Cannot train units while barrack is upgrading!");
-            return false;
+            InputUtil.displayError("\nCannot train units while barrack is upgrading!");
+            return null;
         }
 
         UnitType unitType = getBarrackUnitType(barrack.getType());
         if (unitType == null) {
-            InputUtil.displayError("Invalid barrack type!");
-            return false;
+            InputUtil.displayError("\nInvalid barrack type!");
+            return null;
         }
 
         int availableCapacity = getAvailableBarrackCapacity(barrack);
         if (quantity > availableCapacity) {
-            InputUtil.displayError("Not enough barrack capacity! Available: " + availableCapacity);
-            return false;
+            InputUtil.displayError("\nNot enough barrack capacity! Available: " + availableCapacity);
+            return null;
         }
 
         GameConfig.UnitCost cost = GameConfig.getUnitCost(unitType);
@@ -137,14 +137,14 @@ public class UnitService {
         long totalWood = cost.wood * quantity;
         long totalStone = cost.stone * quantity;
         if (!resourceService.hasEnoughResources(totalFood, totalWood, totalStone)) {
-            InputUtil.displayError("Not enough resources!");
+            InputUtil.displayError("\nNot enough resources!");
             resourceService.displayResourceComparison(totalFood, totalWood, totalStone);
-            return false;
+            return null;
         }
 
         if (!resourceService.deductResources(totalFood, totalWood, totalStone)) {
-            InputUtil.displayError("Failed to deduct resources!");
-            return false;
+            InputUtil.displayError("\nFailed to deduct resources!");
+            return null;
         }
 
         UnitQueue unitQueue = new UnitQueue();
@@ -168,11 +168,11 @@ public class UnitService {
             InputUtil.displaySuccess("Training started: " + quantity + " " + unitType +
                     " will be ready in " + formattedTime);
 
-            return true;
+            return unitQueue;
         } else {
             InputUtil.displayError("Failed to start training!");
             resourceService.addResources(totalFood, totalWood, totalStone);
-            return false;
+            return null;
         }
     }
 
@@ -230,7 +230,8 @@ public class UnitService {
                     break;
                 }
             } else {
-                InputUtil.displaySuccess("Status: COMPLETED - Ready to collect!");
+                InputUtil.displaySuccess("Training completed!");
+                InputUtil.clearInputBuffer();
                 InputUtil.pressEnterToContinue();
                 isLive[0] = false;
             }
@@ -468,10 +469,9 @@ public class UnitService {
                 InputUtil.displayInfo("Press enter to go back");
                 if (userWantsToExit[0]) {
                     if (inputThread != null && inputThread.isAlive()) {
+                        InputUtil.clearInputBuffer();
                         inputThread.interrupt();
                     }
-
-                    InputUtil.clearInputBuffer();
 
                     try {
                         Thread.sleep(100);
@@ -488,6 +488,8 @@ public class UnitService {
                 }
                 continue;
             }
+            InputUtil.clearInputBuffer();
+
             String input = InputUtil.readString("\nChoose action");
 
             if (input.equals("0")) {
@@ -516,16 +518,21 @@ public class UnitService {
                     InputUtil.pressEnterToContinue();
                     continue;
                 }
-                InputUtil.clearTerminal();
-                System.out.println("Available capacity: " + availableCapacity);
+                System.out.println("\nAvailable capacity: " + availableCapacity);
                 int quantity = InputUtil.readIntInRange("How many units to train (0 to cancel)", 0, availableCapacity);
 
-                if (quantity > 0) {
-                    boolean success = trainUnits(barrack, quantity);
-                    if (success) {
-                        InputUtil.displaySuccess("Training started successfully!");
-                    }
+                if (quantity < 0) {
+                    InputUtil.displayError("Invalid quantity!");
                     InputUtil.pressEnterToContinue();
+                    continue;
+                }
+                if (quantity > 0) {
+                    UnitQueue trainingQueue = trainUnits(barrack, quantity);
+                    if (trainingQueue != null) {
+                        showTrainingProgressLive(trainingQueue);
+                    } else {
+                        InputUtil.pressEnterToContinue();
+                    }
                 }
             } else {
                 InputUtil.displayError("Invalid choice!");

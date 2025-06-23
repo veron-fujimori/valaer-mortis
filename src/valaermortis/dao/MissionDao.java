@@ -15,9 +15,8 @@ public class MissionDao {
         String generatedId = java.util.UUID.randomUUID().toString();
         mission.setId(generatedId);
 
-        String sql = "INSERT INTO missions (id, user_id, type, status, mining_area_id, creature_id, " +
-                "start_time, end_time) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO missions (id, user_id, type, status, start_time, end_time) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DB.getInstance().getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -26,17 +25,8 @@ public class MissionDao {
             stmt.setString(2, mission.getUserId());
             stmt.setString(3, mission.getType().toString().toLowerCase());
             stmt.setString(4, mission.getStatus().toString().toLowerCase());
-
-            if (mission.getType() == MissionType.MINING) {
-                stmt.setLong(5, mission.getMiningAreaId());
-                stmt.setNull(6, Types.BIGINT);
-            } else {
-                stmt.setNull(5, Types.BIGINT);
-                stmt.setLong(6, mission.getCreatureId());
-            }
-
-            stmt.setTimestamp(7, mission.getStartTime());
-            stmt.setTimestamp(8, mission.getEndTime());
+            stmt.setTimestamp(5, mission.getStartTime());
+            stmt.setTimestamp(6, mission.getEndTime());
 
             int result = stmt.executeUpdate();
 
@@ -171,8 +161,6 @@ public class MissionDao {
         mission.setUserId(rs.getString("user_id"));
         mission.setType(MissionType.valueOf(rs.getString("type").toUpperCase()));
         mission.setStatus(MissionStatus.valueOf(rs.getString("status").toUpperCase()));
-        mission.setMiningAreaId(rs.getLong("mining_area_id"));
-        mission.setCreatureId(rs.getLong("creature_id"));
         mission.setStartTime(rs.getTimestamp("start_time"));
         mission.setEndTime(rs.getTimestamp("end_time"));
         return mission;

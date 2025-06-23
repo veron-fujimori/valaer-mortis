@@ -9,8 +9,6 @@ public class Mission {
     private String userId;
     private MissionType type;
     private MissionStatus status;
-    private Long miningAreaId;
-    private Long creatureId;
     private Timestamp startTime;
     private Timestamp endTime;
 
@@ -47,22 +45,6 @@ public class Mission {
 
     public void setStatus(MissionStatus status) {
         this.status = status;
-    }
-
-    public Long getMiningAreaId() {
-        return miningAreaId;
-    }
-
-    public void setMiningAreaId(Long miningAreaId) {
-        this.miningAreaId = miningAreaId;
-    }
-
-    public Long getCreatureId() {
-        return creatureId;
-    }
-
-    public void setCreatureId(Long creatureId) {
-        this.creatureId = creatureId;
     }
 
     public Timestamp getStartTime() {

@@ -13,7 +13,7 @@ public class InputUtil {
             if (!input.isEmpty()) {
                 return input;
             } else {
-                displayError("Input tidak boleh kosong. Silakan masukkan teks.");
+                displayError("Input cannot be empty. Please enter text.");
             }
         }
     }
@@ -27,11 +27,10 @@ public class InputUtil {
         while (true) {
             System.out.print(createStyledPrompt(prompt));
             String input = sc.nextLine().trim();
-
             if (!input.isEmpty()) {
                 return input;
             } else {
-                displayError("Input tidak boleh kosong. Silakan masukkan password.");
+                displayError("Input cannot be empty. Please enter password.");
             }
         }
     }
@@ -42,12 +41,12 @@ public class InputUtil {
             String input = sc.nextLine().trim();
 
             if (input.isEmpty()) {
-                displayError("Input tidak boleh kosong. Silakan masukkan angka.");
+                displayError("Input cannot be empty. Please enter a number.");
             } else {
                 try {
                     return Integer.parseInt(input);
                 } catch (NumberFormatException e) {
-                    displayError("Input '" + input + "' tidak valid. Silakan masukkan angka yang benar.");
+                    displayError("Input '" + input + "' is not valid. Please enter a valid number.");
                 }
             }
         }
@@ -59,7 +58,7 @@ public class InputUtil {
             if (value >= min && value <= max) {
                 return value;
             } else {
-                displayError("Silakan masukkan angka antara " + min + " dan " + max + ".");
+                displayError("Please enter a number between " + min + " and " + max + ".");
             }
         }
     }
@@ -68,19 +67,18 @@ public class InputUtil {
         while (true) {
             System.out.print(menuPrompt);
             String input = sc.nextLine().trim();
-
             if (input.isEmpty()) {
-                displayError("Input tidak boleh kosong. Silakan masukkan angka.");
+                displayError("Input cannot be empty. Please enter a number.");
             } else {
                 try {
                     int value = Integer.parseInt(input);
                     if (value >= min && value <= max) {
                         return value;
                     } else {
-                        displayError("Silakan masukkan angka antara " + min + " dan " + max + ".");
+                        displayError("Please enter a number between " + min + " and " + max + ".");
                     }
                 } catch (NumberFormatException e) {
-                    displayError("Input '" + input + "' tidak valid. Silakan masukkan angka yang benar.");
+                    displayError("Input '" + input + "' is not valid. Please enter a valid number.");
                 }
             }
         }
@@ -92,7 +90,7 @@ public class InputUtil {
             if (value > 0) {
                 return value;
             } else {
-                displayError("Silakan masukkan angka positif (lebih besar dari 0).");
+                displayError("Please enter a positive number (greater than 0).");
             }
         }
     }
@@ -103,7 +101,7 @@ public class InputUtil {
             if (value >= 0) {
                 return value;
             } else {
-                displayError("Silakan masukkan angka non-negatif (0 atau lebih besar).");
+                displayError("Please enter a non-negative number (0 or greater).");
             }
         }
     }
@@ -160,9 +158,9 @@ public class InputUtil {
                 System.out.println();
                 return false;
             } else if (input.isEmpty()) {
-                displayError("Silakan masukkan 'y' untuk ya atau 'n' untuk tidak.");
+                displayError("Please enter 'y' for yes or 'n' for no.");
             } else {
-                displayError("Input tidak valid. Silakan masukkan 'y' untuk ya atau 'n' untuk tidak.");
+                displayError("Invalid input. Please enter 'y' for yes or 'n' for no.");
             }
         }
     }
@@ -177,7 +175,7 @@ public class InputUtil {
             } else if (input.equals("n") || input.equals("no")) {
                 return false;
             } else {
-                displayError("Silakan masukkan 'y' atau 'n'.");
+                displayError("Please enter 'y' or 'n'.");
             }
         }
     }

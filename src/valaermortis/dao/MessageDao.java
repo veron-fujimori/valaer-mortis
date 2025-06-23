@@ -14,12 +14,11 @@ public class MessageDao {
         String sql = "INSERT INTO messages (user_id, title, message) VALUES (?, ?, ?)";
 
         try (Connection conn = DB.getInstance().getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, userId);
             ps.setString(2, title);
             ps.setString(3, messageText);
-
             return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
