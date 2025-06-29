@@ -419,6 +419,7 @@ public class UnitService {
             System.out.println("┌─ Unit Stats");
             System.out.println("│  ├─ HP             : " + stats.hp);
             System.out.println("│  ├─ Attack Power   : " + stats.attackPower);
+            System.out.println("│  ├─ Defense        : " + stats.defenseModifier);
             System.out.println("│  ├─ Speed          : " + stats.speed + " units/second");
             System.out.println("│  └─ Carry Capacity : " + stats.carryCapacity + " resources");
             System.out.println("│");
@@ -469,6 +470,7 @@ public class UnitService {
                     System.out.println("┌─ Unit Stats");
                     System.out.println("│  ├─ HP             : " + stats.hp);
                     System.out.println("│  ├─ Attack Power   : " + stats.attackPower);
+                    System.out.println("│  ├─ Defense        : " + stats.defenseModifier);
                     System.out.println("│  ├─ Speed          : " + stats.speed + " units/second");
                     System.out.println("│  └─ Carry Capacity : " + stats.carryCapacity + " resources");
                     System.out.println("│");
