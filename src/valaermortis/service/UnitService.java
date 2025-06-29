@@ -220,7 +220,7 @@ public class UnitService {
                 }
             } else {
                 InputUtil.displaySuccess("\nTraining completed!");
-                System.out.println("Press Enter to continue...");
+                System.out.println("Press Enter to Continue...");
                 isLive[0] = false;
             }
         }
@@ -429,7 +429,6 @@ public class UnitService {
             System.out.println("│");
             System.out.println("└─ Training Time  : " + cost.timeSeconds + " seconds per unit");
 
-
             List<UnitQueue> activeQueues = barrackQueues.stream()
                     .filter(queue -> queue.getStatus() == QueueStatus.TRAINING)
                     .collect(Collectors.toList());
@@ -479,7 +478,7 @@ public class UnitService {
                     System.out.println("│  └─ Stone       : " + cost.stone + " per unit");
                     System.out.println("│");
                     System.out.println("└─ Training Time  : " + cost.timeSeconds + " seconds per unit");
-        
+
                     boolean stillTraining = false;
                     for (UnitQueue queue : activeQueues) {
                         long remainingSeconds = ctx.progressService.getUnitTrainingRemainingTime(queue);
@@ -518,7 +517,7 @@ public class UnitService {
                 continue;
             }
             if (barrack.getUpgradeEndTime() != null) {
-                InputUtil.clearInputBuffer(); 
+                InputUtil.clearInputBuffer();
                 String input = InputUtil.readString("\nChoose action");
                 if (input.equals("0")) {
                     if (inputThread != null && inputThread.isAlive()) {

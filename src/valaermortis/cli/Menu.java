@@ -170,7 +170,8 @@ public class Menu {
             int townhallLevel = ctx.buildingService.getBuildingByType(BuildingType.TOWNHALL).getLevel();
             GameConfig.BuildCost cost = GameConfig.getBarrackBuildCost(type, townhallLevel);
             System.out.println(TerminalArt.white("[" + (i + 1) + "] " + type.toString() +
-                    " - Cost: " + cost.food + " Food, " + cost.wood + " Wood, " + cost.stone + " Stone"));
+                    " - Cost: " + cost.food + " Food, " + cost.wood + " Wood, " + cost.stone + " Stone" +
+                    " | Build Time: " + cost.timeSeconds + " seconds"));
         }
         System.out.println(TerminalArt.white("[0] Cancel"));
         System.out.println();
@@ -327,9 +328,11 @@ public class Menu {
 
             Building freshTownhall = ctx.buildingService.getBuildingByType(BuildingType.TOWNHALL);
             if (freshTownhall == null || freshTownhall.getUpgradeEndTime() == null) {
-                InputUtil.displaySuccess("Townhall upgrade completed to level " + nextLevel + "!");
-                System.out.println();
-                InputUtil.displayInfo("Press Enter to continue...");
+                InputUtil.printSectionSeparator("TOWNHALL UPGRADE PAGE");
+                System.out.println(TerminalArt.white("Current Level   : " + currentLevel));
+                System.out.println(TerminalArt.white("Upgrading to    : " + nextLevel));
+                InputUtil.displaySuccess("\nTownhall upgrade completed to level " + nextLevel + "!");
+                InputUtil.displayInfo("Press Enter to Continue...");
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
@@ -357,7 +360,7 @@ public class Menu {
                 }
             } else {
                 InputUtil.displaySuccess("\nTownhall upgrade completed to level " + nextLevel + "!");
-                InputUtil.displayInfo("Press Enter to continue...");
+                InputUtil.displayInfo("Press Enter to Continue...");
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
@@ -409,7 +412,7 @@ public class Menu {
             }
             if (freshBarrack == null || freshBarrack.getUpgradeEndTime() == null) {
                 InputUtil.displaySuccess("Barrack upgrade completed to level " + nextLevel + "!");
-                InputUtil.displayInfo("Press Enter to continue...");
+                InputUtil.displayInfo("Press Enter to Continue...");
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
@@ -439,7 +442,7 @@ public class Menu {
                 }
             } else {
                 InputUtil.displaySuccess("Barrack upgrade completed to level " + nextLevel + "!");
-                InputUtil.displayInfo("Press Enter to continue...");
+                InputUtil.displayInfo("Press Enter to Continue...");
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
@@ -787,7 +790,7 @@ public class Menu {
 
                 InputUtil.displaySuccess("Storage upgrade completed to level " + nextLevel + "!");
                 System.out.println();
-                InputUtil.displayInfo("Press Enter to continue...");
+                InputUtil.displayInfo("Press Enter to Continue...");
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
@@ -818,7 +821,7 @@ public class Menu {
 
                 System.out.println();
                 InputUtil.displaySuccess("Storage upgrade completed to level " + nextLevel + "!");
-                InputUtil.displayInfo("Press Enter to continue...");
+                InputUtil.displayInfo("Press Enter to Continue...");
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -881,7 +884,7 @@ public class Menu {
 
                 System.out.println();
                 InputUtil.displaySuccess("Barrack construction completed!");
-                InputUtil.displayInfo("Press Enter to continue...");
+                InputUtil.displayInfo("Press Enter to Continue...");
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -896,7 +899,7 @@ public class Menu {
 
             long remainingSeconds = ctx.progressService.getBuildingUpgradeRemainingTime(constructingBarrack);
 
-            InputUtil.printSectionSeparator("BARRACK CONSTRUCTION IN PROGRESS");
+            InputUtil.printSectionSeparator("BARRACK CONSTRUCTION PAGE");
             System.out.println(TerminalArt.white("Barrack Type    : " + constructingBarrack.getType()));
             System.out.println(TerminalArt.white("Construction Status : In Progress"));
 
@@ -918,7 +921,7 @@ public class Menu {
 
                 System.out.println();
                 InputUtil.displaySuccess("Barrack construction completed!");
-                InputUtil.displayInfo("Press Enter to continue...");
+                InputUtil.displayInfo("Press Enter to Continue...");
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {

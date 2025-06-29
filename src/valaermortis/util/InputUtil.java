@@ -108,7 +108,7 @@ public class InputUtil {
     }
 
     public static void pressEnterToContinue() {
-        pressEnterToContinue("Press Enter to continue...");
+        pressEnterToContinue("Press Enter to Continue...");
     }
 
     public static void pressEnterToContinue(String message) {
@@ -210,10 +210,10 @@ public class InputUtil {
     }
 
     public static boolean isInputAvailable() {
-    try {
-        return System.in.available() > 0;
-    } catch (IOException e) {
-        return false;
+        try {
+            return System.in.available() > 0;
+        } catch (IOException e) {
+            return false;
+        }
     }
-}
 }

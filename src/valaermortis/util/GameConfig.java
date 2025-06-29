@@ -7,13 +7,14 @@ import java.util.Map;
 
 public class GameConfig {
     public static final Map<String, Integer> BARRACK_MIN_TOWNHALL_LEVEL = new HashMap<String, Integer>() {
-    {
-        put("barbarian_barrack", 1);
-        put("archer_barrack", 2);
-        put("mage_barrack", 4);
-        put("knight_barrack", 7);
-        put("healer_barrack", 9);
-    }};
+        {
+            put("barbarian_barrack", 1);
+            put("archer_barrack", 2);
+            put("mage_barrack", 4);
+            put("knight_barrack", 7);
+            put("healer_barrack", 9);
+        }
+    };
 
     public static final Map<UnitType, int[]> UNIT_TRAINING_COSTS = new HashMap<UnitType, int[]>() {
         {
@@ -34,7 +35,7 @@ public class GameConfig {
             put(UnitType.HEALER, new double[] { 20, 1.1, 10, 1.6 });
         }
     };
-    
+
     public static final int MINING_RATE_PER_UNIT = 20;
     public static final int TRAVEL_TIME_PER_DISTANCE = 1;
 
@@ -112,7 +113,7 @@ public class GameConfig {
 
     public static UpgradeCost getTownhallUpgradeCost(int toLevel) {
         if (toLevel >= 2 && toLevel <= 10) {
-            StorageCapacity cap = getStorageCapacity(toLevel);
+            StorageCapacity cap = getStorageCapacity(toLevel - 1);
             int food = (int) (cap.maxFood * 0.3);
             int wood = (int) (cap.maxWood * 0.3);
             int stone = (int) (cap.maxStone * 0.3);
@@ -124,7 +125,7 @@ public class GameConfig {
 
     public static UpgradeCost getStorageUpgradeCost(int toLevel) {
         if (toLevel >= 2 && toLevel <= 10) {
-            StorageCapacity cap = getStorageCapacity(toLevel);
+            StorageCapacity cap = getStorageCapacity(toLevel-1);
             int food = (int) (cap.maxFood * 0.10);
             int wood = (int) (cap.maxWood * 0.10);
             int stone = (int) (cap.maxStone * 0.10);
@@ -136,7 +137,7 @@ public class GameConfig {
 
     public static UpgradeCost getBarrackUpgradeCost(int toLevel) {
         if (toLevel >= 2 && toLevel <= 10) {
-            StorageCapacity cap = getStorageCapacity(toLevel);
+            StorageCapacity cap = getStorageCapacity(toLevel-1);
             int food = (int) (cap.maxFood * 0.07);
             int wood = (int) (cap.maxWood * 0.07);
             int stone = (int) (cap.maxStone * 0.07);
@@ -154,7 +155,7 @@ public class GameConfig {
         int food = (int) (cap.maxFood * 0.05);
         int wood = (int) (cap.maxWood * 0.05);
         int stone = (int) (cap.maxStone * 0.05);
-        int timeSeconds = Math.min(8, 3 + townhallLevel);
+        int timeSeconds = 3 + townhallLevel;
 
         return new BuildCost(food, wood, stone, timeSeconds, minTownhallLevel);
     }
@@ -167,7 +168,7 @@ public class GameConfig {
         long maxFood = Math.round(baseFood * Math.pow(growth, level - 1));
         long maxWood = Math.round(baseWood * Math.pow(growth, level - 1));
         long maxStone = Math.round(baseStone * Math.pow(growth, level - 1));
-        
+
         return new StorageCapacity(maxFood, maxWood, maxStone);
     }
 
