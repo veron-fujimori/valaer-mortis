@@ -411,7 +411,7 @@ public class Menu {
                 }
             }
             if (freshBarrack == null || freshBarrack.getUpgradeEndTime() == null) {
-                InputUtil.displaySuccess("Barrack upgrade completed to level " + nextLevel + "!");
+                InputUtil.displaySuccess("\nBarrack upgrade completed to level " + nextLevel + "!");
                 InputUtil.displayInfo("Press Enter to Continue...");
                 try {
                     Thread.sleep(2000);

@@ -22,7 +22,7 @@ public class GameConfig {
             put(UnitType.ARCHER, new int[] { 40, 20, 0, 3 });
             put(UnitType.MAGE, new int[] { 60, 20, 20, 4 });
             put(UnitType.KNIGHT, new int[] { 55, 0, 35, 4 });
-            put(UnitType.HEALER, new int[] { 45, 0, 0, 3 });
+            put(UnitType.HEALER, new int[] { 45, 0, 0, 5 });
         }
     };
 

@@ -64,19 +64,19 @@ public class AuthService {
 
                 if (gameStateId > 0 && buildingId > 0) {
                     System.out.println();
-                    InputUtil.displaySuccess("Registrasi successful! Please log in.");
+                    InputUtil.displaySuccess("Registration successful! Please log in.");
                 } else {
                     System.out.println();
-                    InputUtil.displayError("Registrasi failed! Error creating initial data.");
+                    InputUtil.displayError("Registration failed! Error creating initial data.");
                 }
             } catch (Exception e) {
                 System.out.println();
-                InputUtil.displayError("Registrasi failed! Error during initialization.");
+                InputUtil.displayError("Registration failed! Error during initialization.");
                 ErrorHandler.logError("Creating initial user data", e);
             }
         } else {
             System.out.println();
-            InputUtil.displayError("Registrasi failed! Error inserting user.");
+            InputUtil.displayError("Registration failed! Error inserting user.");
         }
     }
 }

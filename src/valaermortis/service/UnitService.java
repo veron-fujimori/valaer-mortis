@@ -316,7 +316,7 @@ public class UnitService {
                 System.out.println("[" + (i + 1) + "] " + unitType + " Barrack (Level " + barrack.getLevel() +
                         ") - " + currentUnits + "/" + capacity + " units" + status);
             }
-            System.out.println("[0] Back to main menu");
+            System.out.println("[0] Back to Home Page");
             System.out.println();
 
             int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose Menu"), 0,
