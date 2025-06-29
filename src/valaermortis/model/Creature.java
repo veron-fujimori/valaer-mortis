@@ -100,29 +100,14 @@ public class Creature {
   }
 
   public String getName() {
-    switch (level) {
-      case 1:
-        return "Goblin";
-      case 2:
-        return "Orc";
-      case 3:
-        return "Troll";
-      case 4:
-        return "Ogre";
-      case 5:
-        return "Giant";
-      case 6:
-        return "Wyvern";
-      case 7:
-        return "Dragon";
-      case 8:
-        return "Titan";
-      case 9:
-        return "Demon";
-      case 10:
-        return "Ancient";
-      default:
-        return "Unknown";
+    if (level >= 1 && level <= 3) {
+      return "Goblin";
+    } else if (level >= 4 && level <= 7) {
+      return "Orc";
+    } else if (level >= 8 && level <= 10) {
+      return "Troll";
+    } else {
+      return "Unknown";
     }
   }
 

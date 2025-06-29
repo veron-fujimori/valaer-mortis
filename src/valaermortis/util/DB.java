@@ -11,6 +11,12 @@ public class DB {
     private final String pass = "";
 
     private DB() {
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
     }
 
     public static synchronized DB getInstance() {
@@ -28,12 +34,7 @@ public class DB {
             }
             return conn;
         } catch (SQLException ex) {
-            System.err.println("\nYOO TRAINEE");
-            System.err.println("1. Idupin dulu MySQL ya!");
-            System.err.println("2. Jangan lupa import file valaer_mortis.sql");
-            System.err.println("3. Port MySQL pastiin 3306");
-            System.err.println("\nSilakan periksa dan coba lagi !!!");
-
+            ex.printStackTrace();
             System.out.print("\nTekan Enter untuk keluar...");
 
             try {

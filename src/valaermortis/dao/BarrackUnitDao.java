@@ -11,8 +11,8 @@ import java.util.List;
 
 public class BarrackUnitDao {
     public boolean create(BarrackUnit barrackUnit) {
-        String sql = "INSERT INTO barrack_units (building_id, unit_type, current_count, max_capacity) " +
-                "VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO barrack_units (building_id, unit_type, current_count) " +
+                "VALUES (?, ?, ?)";
 
         try (Connection conn = DB.getInstance().getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -20,7 +20,6 @@ public class BarrackUnitDao {
             stmt.setLong(1, barrackUnit.getBuildingId());
             stmt.setString(2, barrackUnit.getUnitType().toString());
             stmt.setInt(3, barrackUnit.getCurrentCount());
-            stmt.setInt(4, barrackUnit.getMaxCapacity());
 
             int result = stmt.executeUpdate();
             if (result > 0) {
@@ -37,14 +36,13 @@ public class BarrackUnitDao {
     }
 
     public boolean update(BarrackUnit barrackUnit) {
-        String sql = "UPDATE barrack_units SET current_count = ?, max_capacity = ? " +
+        String sql = "UPDATE barrack_units SET current_count = ? " +
                 "WHERE id = ?";
         try (Connection conn = DB.getInstance().getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setInt(1, barrackUnit.getCurrentCount());
-            stmt.setInt(2, barrackUnit.getMaxCapacity());
-            stmt.setLong(3, barrackUnit.getId());
+            stmt.setLong(2, barrackUnit.getId());
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             ErrorHandler.logDatabaseError("updating barrack unit", e);
@@ -173,22 +171,6 @@ public class BarrackUnitDao {
         return false;
     }
 
-    public boolean updateCapacity(long buildingId, int newCapacity) {
-        String sql = "UPDATE barrack_units SET max_capacity = ? " +
-                "WHERE building_id = ?";
-
-        try (Connection conn = DB.getInstance().getConnection();
-                PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setInt(1, newCapacity);
-            stmt.setLong(2, buildingId);
-            return stmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            ErrorHandler.logDatabaseError("updating capacity", e);
-        }
-        return false;
-    }
-
     public boolean delete(long id) {
         String sql = "DELETE FROM barrack_units WHERE id = ?";
 
@@ -223,7 +205,6 @@ public class BarrackUnitDao {
         unit.setBuildingId(rs.getLong("building_id"));
         unit.setUnitType(UnitType.valueOf(rs.getString("unit_type").toUpperCase()));
         unit.setCurrentCount(rs.getInt("current_count"));
-        unit.setMaxCapacity(rs.getInt("max_capacity"));
         return unit;
     }
 }

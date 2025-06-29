@@ -33,11 +33,28 @@ public class GameStateDao {
     }
 
     public long createInitialGameState(String userId) {
+        int initialTownhallLevel = 1;
+        int initialStorageLevel = 1;
+        long initialFood = 3000;
+        long initialWood = 5000;
+        long initialStone = 2000;
+
+        valaermortis.util.GameConfig.StorageCapacity cap = valaermortis.util.GameConfig
+                .getStorageCapacity(initialStorageLevel);
+
         try (Connection conn = DB.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO game_state (user_id, townhall_lvl, storage_lvl, food, wood, stone, max_food, max_wood, max_stone) VALUES (?, 1, 1, 2000, 2000, 1000, 5000, 7000, 3000)",
+                        "INSERT INTO game_state (user_id, townhall_lvl, storage_lvl, food, wood, stone, max_food, max_wood, max_stone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, userId);
+            ps.setInt(2, initialTownhallLevel);
+            ps.setInt(3, initialStorageLevel);
+            ps.setLong(4, initialFood);
+            ps.setLong(5, initialWood);
+            ps.setLong(6, initialStone);
+            ps.setLong(7, cap.maxFood);
+            ps.setLong(8, cap.maxWood);
+            ps.setLong(9, cap.maxStone);
             ps.executeUpdate();
             ResultSet rs = ps.getGeneratedKeys();
             if (rs.next()) {
@@ -85,41 +102,15 @@ public class GameStateDao {
     }
 
     public boolean upgradeTownhall(String userId, int newLevel) {
-        long[] capacities = calculateStorageCapacities(newLevel);
-
         try (Connection conn = DB.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE game_state SET townhall_lvl = ?, storage_lvl = ?, max_food = ?, max_wood = ?, max_stone = ? WHERE user_id = ?")) {
+                        "UPDATE game_state SET townhall_lvl = ? WHERE user_id = ?")) {
             ps.setInt(1, newLevel);
-            ps.setInt(2, newLevel);
-            ps.setLong(3, capacities[0]);
-            ps.setLong(4, capacities[1]);
-            ps.setLong(5, capacities[2]);
-            ps.setString(6, userId);
+            ps.setString(2, userId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             ErrorHandler.logDatabaseError("upgrading townhall", e);
         }
         return false;
-    }
-
-    private long[] calculateStorageCapacities(int storageLevel) {
-        long[][] capacities = {
-                { 5000, 7000, 3000 },
-                { 12000, 16000, 8000 },
-                { 25000, 35000, 18000 },
-                { 50000, 70000, 35000 },
-                { 100000, 140000, 70000 },
-                { 200000, 280000, 140000 },
-                { 350000, 490000, 245000 },
-                { 600000, 840000, 420000 },
-                { 1000000, 1400000, 700000 },
-                { 1600000, 2240000, 1120000 }
-        };
-
-        if (storageLevel >= 1 && storageLevel <= 10) {
-            return capacities[storageLevel - 1];
-        }
-        return capacities[0];
     }
 }

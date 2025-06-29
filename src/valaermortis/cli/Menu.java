@@ -29,13 +29,13 @@ public class Menu {
     private void showAuthMenu() {
         InputUtil.clearTerminal();
         TerminalArt.printBanner();
-        InputUtil.printSectionSeparator("AUTH MENU");
+        InputUtil.printSectionSeparator("Landing PAGE");
         System.out.println(TerminalArt.white("[1] Login"));
         System.out.println(TerminalArt.white("[2] Register"));
         System.out.println(TerminalArt.white("[3] Exit"));
 
         System.out.println();
-        int ch = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose option"), 1, 3);
+        int ch = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose Menu"), 1, 3);
         switch (ch) {
             case 1:
                 InputUtil.clearTerminal();
@@ -66,7 +66,7 @@ public class Menu {
 
         InputUtil.clearTerminal();
         TerminalArt.printMainHeader(user, ctx.gameService.getGameState());
-        InputUtil.printSectionSeparator("MAIN MENU");
+        InputUtil.printSectionSeparator("HOME PAGE");
         System.out.println(TerminalArt.white("[1] Upgrade Townhall"));
         System.out.println(TerminalArt.white("[2] Build/Upgrade Barrack"));
         System.out.println(TerminalArt.white("[3] Upgrade Storage"));
@@ -78,7 +78,7 @@ public class Menu {
         System.out.println(TerminalArt.white("[9] Logout"));
 
         System.out.println();
-        int ch = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose option"), 1, 9);
+        int ch = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose Menu"), 1, 9);
         switch (ch) {
             case 1:
                 townhallUpgradeMenu();
@@ -130,10 +130,10 @@ public class Menu {
             System.out.println(TerminalArt.white("[1] View Buildings     "));
             System.out.println(TerminalArt.white("[2] Build New Barrack  "));
             System.out.println(TerminalArt.white("[3] Upgrade Barrack    "));
-            System.out.println(TerminalArt.white("[4] Back to Main Menu  "));
+            System.out.println(TerminalArt.white("[4] Back to Home Page"));
 
             System.out.println();
-            int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose option"), 1, 4);
+            int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose Menu"), 1, 4);
             switch (choice) {
                 case 1:
                     ctx.buildingService.displayBuildings();
@@ -159,20 +159,22 @@ public class Menu {
         TerminalArt.printMainHeader(user, ctx.gameService.getGameState());
         List<BuildingType> available = ctx.buildingService.getAvailableBarracksToBuild();
         if (available.isEmpty()) {
-            InputUtil.displayError("No new barracks available at your townhall level!");
+            InputUtil.displayError("\nNo new barracks available at your townhall level!");
+            InputUtil.pressEnterToContinue();
             return;
         }
 
         InputUtil.printSectionSeparator("BUILD BARRACK");
         for (int i = 0; i < available.size(); i++) {
             BuildingType type = available.get(i);
-            GameConfig.BuildCost cost = GameConfig.getBarrackBuildCost(type);
+            int townhallLevel = ctx.buildingService.getBuildingByType(BuildingType.TOWNHALL).getLevel();
+            GameConfig.BuildCost cost = GameConfig.getBarrackBuildCost(type, townhallLevel);
             System.out.println(TerminalArt.white("[" + (i + 1) + "] " + type.toString() +
                     " - Cost: " + cost.food + " Food, " + cost.wood + " Wood, " + cost.stone + " Stone"));
         }
         System.out.println(TerminalArt.white("[0] Cancel"));
         System.out.println();
-        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose option"), 0, available.size());
+        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose Menu"), 0, available.size());
         if (choice <= 0 || choice > available.size()) {
             InputUtil.displayInfo("Build cancelled.");
             return;
@@ -245,17 +247,22 @@ public class Menu {
         System.out.println(TerminalArt.white("Upgrade Time    : " + cost.timeSeconds + " seconds"));
         InputUtil.printSubsectionSeparator("Upgrade Benefits");
 
-        int[] currentLimits = GameConfig.TOWNHALL_LIMITS[currentLevel - 1];
-        int[] newLimits;
+        int currentMaxBarrackPerType = GameConfig.getMaxBarracksPerType(currentLevel);
+        int newMaxBarrackPerType = GameConfig.getMaxBarracksPerType(nextLevel);
+        int currentMaxBarrackLevel = GameConfig.getMaxBarrackLevel(currentLevel);
+        int newMaxBarrackLevel = GameConfig.getMaxBarrackLevel(nextLevel);
+        int currentMaxStorageLevel = GameConfig.getMaxStorageLevel(currentLevel);
+        int newMaxStorageLevel = GameConfig.getMaxStorageLevel(nextLevel);
+
         if (isAtMaxLevel) {
-            newLimits = currentLimits;
-        } else {
-            newLimits = GameConfig.TOWNHALL_LIMITS[nextLevel - 1];
+            newMaxBarrackPerType = currentMaxBarrackPerType;
+            newMaxBarrackLevel = currentMaxBarrackLevel;
+            newMaxStorageLevel = currentMaxStorageLevel;
         }
 
-        System.out.println("- Max Barracks Per Type: " + currentLimits[0] + " -> " + newLimits[0]);
-        System.out.println("- Max Barrack Level: " + currentLimits[1] + " -> " + newLimits[1]);
-        System.out.println("- Max Storage Level: " + currentLimits[2] + " -> " + newLimits[2]);
+        System.out.println("- Max Barracks Per Type: " + currentMaxBarrackPerType + " -> " + newMaxBarrackPerType);
+        System.out.println("- Max Barrack Level: " + currentMaxBarrackLevel + " -> " + newMaxBarrackLevel);
+        System.out.println("- Max Storage Level: " + currentMaxStorageLevel + " -> " + newMaxStorageLevel);
 
         if (!isAtMaxLevel) {
             if (nextLevel == 2) {
@@ -331,7 +338,7 @@ public class Menu {
                 break;
             }
             long remainingSeconds = ctx.progressService.getBuildingUpgradeRemainingTime(freshTownhall);
-            InputUtil.printSectionSeparator("TOWNHALL UPGRADE IN PROGRESS");
+            InputUtil.printSectionSeparator("TOWNHALL UPGRADE PAGE");
             System.out.println(TerminalArt.white("Current Level   : " + currentLevel));
             System.out.println(TerminalArt.white("Upgrading to    : " + nextLevel));
             if (remainingSeconds > 0) {
@@ -349,8 +356,7 @@ public class Menu {
                     break;
                 }
             } else {
-                InputUtil.displaySuccess("Townhall upgrade completed to level " + nextLevel + "!");
-                System.out.println();
+                InputUtil.displaySuccess("\nTownhall upgrade completed to level " + nextLevel + "!");
                 InputUtil.displayInfo("Press Enter to continue...");
                 try {
                     Thread.sleep(2000);
@@ -403,7 +409,6 @@ public class Menu {
             }
             if (freshBarrack == null || freshBarrack.getUpgradeEndTime() == null) {
                 InputUtil.displaySuccess("Barrack upgrade completed to level " + nextLevel + "!");
-                System.out.println();
                 InputUtil.displayInfo("Press Enter to continue...");
                 try {
                     Thread.sleep(2000);
@@ -434,7 +439,6 @@ public class Menu {
                 }
             } else {
                 InputUtil.displaySuccess("Barrack upgrade completed to level " + nextLevel + "!");
-                System.out.println();
                 InputUtil.displayInfo("Press Enter to continue...");
                 try {
                     Thread.sleep(2000);
@@ -687,7 +691,7 @@ public class Menu {
 
     private void continueWithBarrackSelection(List<Building> allBarracks, int townhallLevel) {
         System.out.println();
-        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose option"), 0,
+        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose Menu"), 0,
                 allBarracks.size());
         if (choice <= 0 || choice > allBarracks.size()) {
             InputUtil.displayInfo("Upgrade cancelled.");
@@ -706,7 +710,7 @@ public class Menu {
         if (selectedBarrack.getLevel() >= maxLevel) {
             InputUtil.displayError("\nThis barrack is already at maximum level for your townhall!");
             InputUtil.displayInfo(
-                    "Upgrade your townhall to level " + (townhallLevel + 1) + " to unlock higher barrack levels.");
+                    "Upgrade your townhall to level to unlock higher barrack levels.");
             InputUtil.pressEnterToContinue();
             return;
         }
@@ -729,10 +733,11 @@ public class Menu {
         System.out.println(TerminalArt.white("Upgrade Time    : " + cost.timeSeconds + " seconds"));
 
         InputUtil.printSubsectionSeparator("Upgrade Benefits");
-        System.out.println("- Unit Capacity: " + GameConfig.BARRACK_CAPACITIES[currentLevel - 1] +
-                " -> " + GameConfig.BARRACK_CAPACITIES[nextLevel - 1] +
-                " (+" + (GameConfig.BARRACK_CAPACITIES[nextLevel - 1] - GameConfig.BARRACK_CAPACITIES[currentLevel - 1])
-                + ")");
+        int currentCapacity = GameConfig.getBarrackCapacity(currentLevel);
+        int nextCapacity = GameConfig.getBarrackCapacity(nextLevel);
+        System.out.println("- Unit Capacity: " + currentCapacity +
+                " -> " + nextCapacity +
+                " (+" + (nextCapacity - currentCapacity) + ")");
 
         boolean confirm = InputUtil.readConfirmation("\nConfirm upgrade? (y/n)");
         if (!confirm) {
@@ -876,7 +881,6 @@ public class Menu {
 
                 System.out.println();
                 InputUtil.displaySuccess("Barrack construction completed!");
-                System.out.println();
                 InputUtil.displayInfo("Press Enter to continue...");
                 try {
                     Thread.sleep(1000);
@@ -914,7 +918,6 @@ public class Menu {
 
                 System.out.println();
                 InputUtil.displaySuccess("Barrack construction completed!");
-                System.out.println();
                 InputUtil.displayInfo("Press Enter to continue...");
                 try {
                     Thread.sleep(1000);

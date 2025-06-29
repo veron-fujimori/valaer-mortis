@@ -1,5 +1,6 @@
 package valaermortis.util;
 
+import java.io.IOException;
 import java.util.Scanner;
 
 public class InputUtil {
@@ -207,4 +208,12 @@ public class InputUtil {
     public static void clearTerminal() {
         TerminalArt.clearScreen();
     }
+
+    public static boolean isInputAvailable() {
+    try {
+        return System.in.available() > 0;
+    } catch (IOException e) {
+        return false;
+    }
+}
 }

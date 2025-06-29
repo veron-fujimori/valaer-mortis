@@ -84,11 +84,6 @@ public class ProgressService {
         boolean success = ctx.missionService.completeMission(mission);
 
         if (success) {
-            long secondsTaken = 0;
-            if (mission.getStartTime() != null && mission.getEndTime() != null) {
-                secondsTaken = (mission.getEndTime().getTime() - mission.getStartTime().getTime()) / 1000;
-            }
-
             MissionResultsDao missionResultsDao = new MissionResultsDao();
             MissionResultsDao.MissionResult result = missionResultsDao.getMissionResult(mission.getId());
             MissionUnitsDao missionUnitsDao = new MissionUnitsDao();
@@ -98,12 +93,10 @@ public class ProgressService {
                     .getSurvivingUnits(mission.getId());
 
             StringBuilder details = new StringBuilder();
-            details.append("Mission type: ").append(mission.getType());
-            details.append(" - Time taken: ").append(formatTime(secondsTaken));
 
             if (!unitsSent.isEmpty()) {
                 details.append("\n\nTROOPS SENT");
-                details.append("\n--------");
+                details.append("\n--------------");
                 for (java.util.Map.Entry<valaermortis.model.enums.UnitType, Integer> entry : unitsSent.entrySet()) {
                     details.append("\n").append(entry.getValue()).append(" ").append(entry.getKey().name());
                 }
@@ -120,25 +113,12 @@ public class ProgressService {
                     resourceType = "STONE";
 
                 details.append("\n\nMINING RESULTS");
-                details.append("\n--------");
-                details.append("\nTotal mined: ").append(totalResources).append(" ").append(resourceType);
-                details.append("\nMining efficiency: ")
-                        .append(String.format("%.2f", totalResources / Math.max(1.0, secondsTaken)))
-                        .append(" resources/sec");
-
-                if (result.getFoodGained() > 0 || result.getWoodGained() > 0 || result.getStoneGained() > 0) {
-                    details.append("\nResources gathered:");
-                    if (result.getFoodGained() > 0)
-                        details.append("\n  - Food: ").append(result.getFoodGained());
-                    if (result.getWoodGained() > 0)
-                        details.append("\n  - Wood: ").append(result.getWoodGained());
-                    if (result.getStoneGained() > 0)
-                        details.append("\n  - Stone: ").append(result.getStoneGained());
-                }
+                details.append("\n--------------");
+                details.append("\n- ").append(totalResources).append(" ").append(resourceType);
 
                 if (!unitsReturned.isEmpty()) {
                     details.append("\n\nTROOPS RETURNED");
-                    details.append("\n--------");
+                    details.append("\n--------------");
                     for (java.util.Map.Entry<valaermortis.model.enums.UnitType, Integer> entry : unitsReturned
                             .entrySet()) {
                         details.append("\n").append(entry.getValue()).append(" ").append(entry.getKey().name());
@@ -146,10 +126,6 @@ public class ProgressService {
                 }
             } else if (mission.getType() == MissionType.ATTACK && result != null) {
                 boolean victorious = result.isSuccess();
-                details.append("\n\nBATTLE RESULTS");
-                details.append("\n--------");
-                details.append("\nBattle outcome: ").append(victorious ? "VICTORY" : "DEFEAT");
-
                 java.util.Map<valaermortis.model.enums.UnitType, Integer> casualties = new java.util.HashMap<>();
                 int totalCasualties = 0;
                 for (java.util.Map.Entry<valaermortis.model.enums.UnitType, Integer> entry : unitsSent.entrySet()) {
@@ -164,21 +140,20 @@ public class ProgressService {
                 }
 
                 if (totalCasualties > 0) {
-                    details.append("\n\nCASUALTIES");
-                    details.append("\n--------");
-                    details.append("\nTotal losses: ").append(totalCasualties).append(" units");
+                    details.append("\n\nLOSSES");
+                    details.append("\n--------------\n");
+                    details.append(totalCasualties).append(" units");
                     for (java.util.Map.Entry<valaermortis.model.enums.UnitType, Integer> entry : casualties
                             .entrySet()) {
-                        details.append("\n  - ").append(entry.getValue()).append(" ").append(entry.getKey().name())
-                                .append(" lost");
+                        details.append("\n- ").append(entry.getValue()).append(" ").append(entry.getKey().name());
                     }
                 } else {
                     details.append("\nNo casualties - all troops returned safely!");
                 }
 
                 if (!unitsReturned.isEmpty()) {
-                    details.append("\n\nSURVIVORS RETURNED");
-                    details.append("\n--------");
+                    details.append("\n\nTROOPS RETURNED");
+                    details.append("\n--------------");
                     int totalSurvivors = 0;
                     for (java.util.Map.Entry<valaermortis.model.enums.UnitType, Integer> entry : unitsReturned
                             .entrySet()) {
@@ -192,22 +167,24 @@ public class ProgressService {
                     int totalRewards = result.getFoodGained() + result.getWoodGained() + result.getStoneGained();
                     if (totalRewards > 0) {
                         details.append("\n\nREWARDS");
-                        details.append("\n--------");
+                        details.append("\n--------------");
                         details.append("\nTotal plunder: ").append(totalRewards).append(" resources");
                         if (result.getFoodGained() > 0)
-                            details.append("\n  - Food: ").append(result.getFoodGained());
+                            details.append(" (Food: ").append(result.getFoodGained());
                         if (result.getWoodGained() > 0)
-                            details.append("\n  - Wood: ").append(result.getWoodGained());
+                            details.append(", Wood: ").append(result.getWoodGained());
                         if (result.getStoneGained() > 0)
-                            details.append("\n  - Stone: ").append(result.getStoneGained());
+                            details.append(", Stone: ").append(result.getStoneGained());
+                        details.append(")");
                     }
+                    details.append("\n\nMISSION SUCCESS - VICTORY!");
                 } else {
-                    details.append("\nNo rewards - mission failed");
+                    details.append("\n\nNo rewards - MISSION FAILED");
                 }
             }
 
-            ctx.messageService.sendMissionCompletedMessage(mission.getType().toString(), true, details.toString());
-        } else {
+            ctx.messageService.sendMissionCompletedMessage(mission.getType().toString(), details.toString());} 
+            else {
             System.err.println("ERROR: Failed to complete mission " + mission.getId());
         }
     }
@@ -248,7 +225,7 @@ public class ProgressService {
             unitQueueDao.deleteQueue(queue.getId());
         }
 
-        String message = queue.getQuantity() + " " + queue.getUnitType() + " units completed training and collected!";
+        String message = queue.getQuantity() + " " + queue.getUnitType() + " units completed training!";
         ctx.messageService.sendMessage("Unit Training Completed", message);
     }
 
@@ -408,19 +385,5 @@ public class ProgressService {
         LocalDateTime now = LocalDateTime.now();
 
         return Math.max(0, ChronoUnit.SECONDS.between(now, endTime));
-    }
-
-    private String formatTime(long seconds) {
-        if (seconds < 60) {
-            return seconds + " seconds";
-        } else if (seconds < 3600) {
-            long minutes = seconds / 60;
-            long remainingSeconds = seconds % 60;
-            return minutes + " minutes " + remainingSeconds + " seconds";
-        } else {
-            long hours = seconds / 3600;
-            long remainingMinutes = (seconds % 3600) / 60;
-            return hours + " hours " + remainingMinutes + " minutes";
-        }
     }
 }

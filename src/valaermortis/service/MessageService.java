@@ -73,10 +73,9 @@ public class MessageService {
         sendMessage(title, message);
     }
 
-    public void sendMissionCompletedMessage(String missionType, boolean success, String details) {
+    public void sendMissionCompletedMessage(String missionType, String details) {
         String title = "Mission Completed";
-        String status = success ? "SUCCESS" : "FAILED";
-        String message = missionType.toUpperCase() + " mission " + status + "! " + details;
+        String message = missionType.toUpperCase() + " MISSION " + details;
         sendMessage(title, message);
     }
 

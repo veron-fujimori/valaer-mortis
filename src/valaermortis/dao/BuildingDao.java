@@ -144,14 +144,13 @@ public class BuildingDao {
     public boolean create(Building building) {
         try (Connection conn = DB.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO buildings (user_id, type, level, is_upgrading, upgrade_end) VALUES (?, ?, ?, ?, ?)",
+                        "INSERT INTO buildings (user_id, type, level, upgrade_end) VALUES (?, ?, ?, ?)",
                         Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, building.getUserId());
             ps.setString(2, building.getType().name().toLowerCase());
             ps.setInt(3, building.getLevel());
-            ps.setBoolean(4, building.isUpgrading());
-            ps.setTimestamp(5, building.getUpgradeEndTime());
+            ps.setTimestamp(4, building.getUpgradeEndTime());
             int result = ps.executeUpdate();
 
             if (result > 0) {
@@ -171,12 +170,11 @@ public class BuildingDao {
     public boolean update(Building building) {
         try (Connection conn = DB.getInstance().getConnection();
                 PreparedStatement ps = conn.prepareStatement(
-                        "UPDATE buildings SET level = ?, is_upgrading = ?, upgrade_end = ? WHERE id = ?")) {
+                        "UPDATE buildings SET level = ?, upgrade_end = ? WHERE id = ?")) {
 
             ps.setInt(1, building.getLevel());
-            ps.setBoolean(2, building.isUpgrading());
-            ps.setTimestamp(3, building.getUpgradeEndTime());
-            ps.setLong(4, building.getId());
+            ps.setTimestamp(2, building.getUpgradeEndTime());
+            ps.setLong(3, building.getId());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             ErrorHandler.logDatabaseError("updating building", e);

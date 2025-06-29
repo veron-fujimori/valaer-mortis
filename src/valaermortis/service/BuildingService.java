@@ -233,7 +233,8 @@ public class BuildingService {
             return false;
         }
 
-        GameConfig.BuildCost cost = GameConfig.getBarrackBuildCost(type);
+        int townhallLevel = getBuildingByType(BuildingType.TOWNHALL).getLevel();
+        GameConfig.BuildCost cost = GameConfig.getBarrackBuildCost(type, townhallLevel);
         if (!resourceService.hasEnoughResources(cost)) {
             System.out.println(TerminalArt.red("\nNot enough resources!"));
             resourceService.displayResourceComparison(cost.food, cost.wood, cost.stone);
@@ -313,7 +314,15 @@ public class BuildingService {
         building.setLevel(building.getLevel() + 1);
         building.setUpgradeEndTime(null);
         if (buildingDao.update(building)) {
-            ctx.messageService.sendBuildingCompletedMessage(building.getType().toString(), building.getLevel());
+            if (building.getLevel() == 1) {
+                ctx.messageService.sendMessage(
+                        "Building Construction Completed",
+                        building.getType() + " has been constructed (level 1)!");
+            } else {
+                ctx.messageService.sendMessage(
+                        "Building Upgrade Completed",
+                        building.getType() + " has been upgraded to level " + building.getLevel() + "!");
+            }
 
             if (building.getType() == BuildingType.STORAGE) {
                 resourceService.updateStorageCapacities(building.getLevel());

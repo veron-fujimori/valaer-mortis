@@ -12,8 +12,8 @@ import java.util.List;
 public class UnitQueueDao {
 
     public boolean addToQueue(UnitQueue unitQueue) {
-        String sql = "INSERT INTO unit_queue (building_id, unit_type, quantity, start_time, end_time, status) " +
-                "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO unit_queue (building_id, unit_type, quantity, end_time, status) " +
+                "VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DB.getInstance().getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -21,9 +21,8 @@ public class UnitQueueDao {
             stmt.setLong(1, unitQueue.getBuildingId());
             stmt.setString(2, unitQueue.getUnitType().toString());
             stmt.setInt(3, unitQueue.getQuantity());
-            stmt.setTimestamp(4, unitQueue.getStartTime());
-            stmt.setTimestamp(5, unitQueue.getEndTime());
-            stmt.setString(6, unitQueue.getStatus().toString());
+            stmt.setTimestamp(4, unitQueue.getEndTime());
+            stmt.setString(5, unitQueue.getStatus().toString());
 
             int affectedRows = stmt.executeUpdate();
 
@@ -168,7 +167,6 @@ public class UnitQueueDao {
         queue.setBuildingId(rs.getLong("building_id"));
         queue.setUnitType(UnitType.valueOf(rs.getString("unit_type").toUpperCase()));
         queue.setQuantity(rs.getInt("quantity"));
-        queue.setStartTime(rs.getTimestamp("start_time"));
         queue.setEndTime(rs.getTimestamp("end_time"));
         queue.setStatus(QueueStatus.valueOf(rs.getString("status").toUpperCase()));
         return queue;

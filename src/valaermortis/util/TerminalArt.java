@@ -79,11 +79,12 @@ public class TerminalArt {
     }
 
     public static void printBanner() {
-        System.out.println(
-                "================================================\n" +
-                        "|            VALAER MORTIS CLI RPG             |\n" +
-                        "|          Strategy & Combat Game              |\n" +
-                        "================================================");
+        System.out.println("             _                                     _   _     ");
+        System.out.println(" /\\   /\\__ _| | __ _  ___ _ __    /\\/\\   ___  _ __| |_(_)___ ");
+        System.out.println(" \\ \\ / / _` | |/ _` |/ _ \\ '__|  /    \\ / _ \\| '__| __| / __|");
+        System.out.println("  \\ V / (_| | | (_| |  __/ |    / /\\/\\ \\ (_) | |  | |_| \\__ \\");
+        System.out.println("   \\_/ \\__,_|_|\\__,_|\\___|_|    \\/    \\/\\___/|_|   \\__|_|___/");
+        System.out.println("                                                             ");
     }
 
     public static void printMainHeader(User user, GameState state) {
@@ -91,7 +92,7 @@ public class TerminalArt {
         String woodStr = String.format("%,d/%,d", state.getWood(), state.getMaxWood());
         String stoneStr = String.format("%,d/%,d", state.getStone(), state.getMaxStone());
 
-        String header = String.format("| %-12s | Townhall Lv.%-2d | Food: %-16s Wood: %-16s Stone: %-16s |",
+        String header = String.format("| %-15s | Townhall Lv.%-2d | Food: %-15s Wood: %-15s Stone: %-15s |",
                 user.getUsername(),
                 state.getTownhallLvl(),
                 foodStr,

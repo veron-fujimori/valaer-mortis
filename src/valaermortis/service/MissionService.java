@@ -77,7 +77,7 @@ public class MissionService {
         System.out.println("[0] Cancel");
 
         System.out.println();
-        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose option"), 0, areas.size());
+        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose Menu"), 0, areas.size());
 
         if (choice == 0) {
             InputUtil.displayInfo("Mining cancelled.");
@@ -105,7 +105,7 @@ public class MissionService {
             return false;
         }
 
-        InputUtil.printSectionSeparator("MINING Area Information");
+        InputUtil.printSectionSeparator("MINING AREA INFORMATION");
         System.out.println("Resource Type: " + miningArea.getResourceType());
         System.out.println("Area Level: " + miningArea.getAreaLevel());
         System.out.println("Available Stock: " + miningArea.getCurrentStock() + " resources");
@@ -134,8 +134,10 @@ public class MissionService {
         long resourcesWillMine = Math.min(totalCarryCapacity, miningArea.getCurrentStock());
 
         int missionTimeSeconds = calculateMiningTime(miningArea.getDistance(), selectedUnits, resourcesWillMine);
+        InputUtil.clearTerminal();
+        TerminalArt.printMainHeader(ctx.getCurrentUser(), ctx.gameService.getGameState());
+        InputUtil.printSectionSeparator("MINING SUMMARY");
 
-        InputUtil.printSubsectionSeparator("Final Mission Details");
         int totalUnits = selectedUnits.values().stream().mapToInt(Integer::intValue).sum();
 
         System.out.println("Total Units: " + totalUnits);
@@ -228,7 +230,7 @@ public class MissionService {
         System.out.println("[0] Cancel");
 
         System.out.println();
-        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose option"), 0, creatures.size());
+        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose Menu"), 0, creatures.size());
         if (choice == 0) {
             System.out.println("Attack cancelled.");
             return;
@@ -256,14 +258,15 @@ public class MissionService {
             return false;
         }
 
-        InputUtil.printSectionSeparator("ATTACK MISSION SETUP");
+        InputUtil.printSectionSeparator("CREATURE INFORMATION");
         System.out.println("Target: " + creature.getName() + " Level " + creature.getLevel());
-        System.out.println("Enemy HP: " + creature.getHp());
-        System.out.println("Potential Rewards: " + creature.getRewardFood() + "/" +
-                creature.getRewardWood() + "/" + creature.getRewardStone());
+        System.out.println("Creature HP: " + creature.getHp());
+        System.out.println("Potential Rewards: " + creature.getRewardFood() + "/" + creature.getRewardWood() + "/"
+                + creature.getRewardStone());
         System.out.println("Distance: " + creature.getDistance() + " units");
         Map<UnitType, Integer> selectedUnits = selectUnitsForMission(availableUnits, MissionType.ATTACK);
         if (selectedUnits.isEmpty()) {
+            InputUtil.pressEnterToContinue();
             return false;
         }
 
@@ -271,13 +274,14 @@ public class MissionService {
 
         int missionTimeSeconds = calculateAttackTime(creature.getDistance(), selectedUnits,
                 creature.getMaxBattleTime());
-
-        InputUtil.printSectionSeparator("Battle Prediction");
+        InputUtil.clearTerminal();
+        TerminalArt.printMainHeader(ctx.getCurrentUser(), ctx.gameService.getGameState());
+        InputUtil.printSectionSeparator("ATTACK SUMMARY ");
         System.out.println("Victory Chance: " + (battleResult.victory ? "VICTORY" : "DEFEAT"));
         System.out.println("Estimated Losses: "
                 + battleResult.unitsLost.values().stream().mapToInt(Integer::intValue).sum() + " units");
         System.out.println("Mission Time: " + missionTimeSeconds + " seconds");
-        boolean confirm = InputUtil.readConfirmation("Start attack mission? (y/n)");
+        boolean confirm = InputUtil.readConfirmation("\nStart attack mission? (y/n)");
         if (!confirm) {
             System.out.println("Mission cancelled");
             return false;
@@ -313,8 +317,6 @@ public class MissionService {
                 generateNewCreature();
                 InputUtil.displayInfo("Creature defeated! New creature spawned.");
             }
-
-            InputUtil.displaySuccess("Attack mission started! Will complete in " + missionTimeSeconds + " seconds.");
             return true;
         } else {
             unitService.returnUnitsFromMission(selectedUnits);
@@ -326,29 +328,14 @@ public class MissionService {
     private Map<UnitType, Integer> selectUnitsForMission(Map<UnitType, Integer> availableUnits,
             MissionType missionType) {
         Map<UnitType, Integer> selectedUnits = new HashMap<>();
-
+        InputUtil.printSubsectionSeparator("UNIT SELECTION");
         for (UnitType unitType : availableUnits.keySet()) {
             int available = availableUnits.get(unitType);
             if (available <= 0)
                 continue;
-
-            GameConfig.UnitStats stats = GameConfig.getUnitStats(unitType);
-
-            System.out.println();
-            System.out.println(unitType + " Selection:");
-            System.out.println("- Available Units: " + available);
-
-            if (missionType == MissionType.MINING) {
-                System.out.println("- Carry Capacity: " + stats.carryCapacity + " per unit");
-                System.out.println("- Max Total Load: " + (stats.carryCapacity * available) + " resources");
-            } else if (missionType == MissionType.ATTACK) {
-                System.out.println("- Attack Power: " + stats.attackPower + " per unit");
-                System.out.println("- Speed: " + stats.speed);
-                System.out.println("- HP: " + stats.hp + " per unit");
-            }
             while (true) {
                 String input = InputUtil
-                        .readString("\nHow many " + unitType + "s to deploy? (0-" + available + ", or 'cancel')");
+                        .readString("How many " + unitType + "s to deploy? (0-" + available + ", or 'cancel')");
 
                 if (input.equalsIgnoreCase("cancel")) {
                     System.out.println("\nMission cancelled");
@@ -364,7 +351,6 @@ public class MissionService {
                     if (count > 0) {
                         selectedUnits.put(unitType, count);
                     } else {
-                        System.out.println("  Skipped " + unitType);
                     }
                     break;
 
@@ -372,11 +358,10 @@ public class MissionService {
                     InputUtil.displayError("Invalid input! Enter a number or 'cancel'");
                 }
             }
-            System.out.println();
         }
 
         if (selectedUnits.isEmpty()) {
-            System.out.println("No units selected for mission.");
+            System.out.println("\nNo units selected for mission.");
         }
         return selectedUnits;
     }
@@ -466,7 +451,8 @@ public class MissionService {
         if (currentActiveCount < 5) {
             generateNewMiningArea();
         }
-    } 
+    }
+
     private void generateNewMiningArea() {
         int currentActiveCount = miningAreaDao.countActiveAreas();
 
@@ -498,6 +484,7 @@ public class MissionService {
     }
 
     private void generateNewCreature() {
+        ctx.gameService.refreshGameState();
         int currentActiveCount = creatureDao.findAliveCreatures().size();
 
         if (currentActiveCount >= 5) {
@@ -516,98 +503,13 @@ public class MissionService {
             creatureLevel = minLevel + (int) (Math.random() * (townhallLevel - minLevel + 1));
         }
 
-        int hp, attackPower, rewardFood, rewardWood, rewardStone, maxBattleTime;
-
-        switch (creatureLevel) {
-            case 1:
-                hp = 400;
-                attackPower = 15;
-                rewardFood = 150;
-                rewardWood = 100;
-                rewardStone = 50;
-                maxBattleTime = 3;
-                break;
-            case 2:
-                hp = 700;
-                attackPower = 25;
-                rewardFood = 300;
-                rewardWood = 200;
-                rewardStone = 100;
-                maxBattleTime = 3;
-                break;
-            case 3:
-                hp = 1200;
-                attackPower = 40;
-                rewardFood = 500;
-                rewardWood = 350;
-                rewardStone = 175;
-                maxBattleTime = 4;
-                break;
-            case 4:
-                hp = 2000;
-                attackPower = 60;
-                rewardFood = 800;
-                rewardWood = 550;
-                rewardStone = 275;
-                maxBattleTime = 4;
-                break;
-            case 5:
-                hp = 3200;
-                attackPower = 85;
-                rewardFood = 1200;
-                rewardWood = 800;
-                rewardStone = 400;
-                maxBattleTime = 5;
-                break;
-            case 6:
-                hp = 5000;
-                attackPower = 120;
-                rewardFood = 1800;
-                rewardWood = 1200;
-                rewardStone = 600;
-                maxBattleTime = 5;
-                break;
-            case 7:
-                hp = 7500;
-                attackPower = 160;
-                rewardFood = 2700;
-                rewardWood = 1800;
-                rewardStone = 900;
-                maxBattleTime = 6;
-                break;
-            case 8:
-                hp = 11000;
-                attackPower = 210;
-                rewardFood = 4000;
-                rewardWood = 2700;
-                rewardStone = 1350;
-                maxBattleTime = 6;
-                break;
-            case 9:
-                hp = 16000;
-                attackPower = 280;
-                rewardFood = 6000;
-                rewardWood = 4000;
-                rewardStone = 2000;
-                maxBattleTime = 7;
-                break;
-            case 10:
-                hp = 25000;
-                attackPower = 370;
-                rewardFood = 9000;
-                rewardWood = 6000;
-                rewardStone = 3000;
-                maxBattleTime = 7;
-                break;
-            default:
-                hp = 400;
-                attackPower = 15;
-                rewardFood = 150;
-                rewardWood = 100;
-                rewardStone = 50;
-                maxBattleTime = 3;
-                break;
-        }
+        GameConfig.CreatureStats stats = GameConfig.getCreatureStats(creatureLevel);
+        int hp = stats.hp;
+        int attackPower = stats.attackPower;
+        int rewardFood = stats.rewardFood;
+        int rewardWood = stats.rewardWood;
+        int rewardStone = stats.rewardStone;
+        int maxBattleTime = stats.maxBattleTime;
 
         int distance = 1 + (int) (Math.random() * 3);
         try (Connection conn = DB.getInstance().getConnection();
@@ -659,11 +561,8 @@ public class MissionService {
 
             List<Mission> activeMissions = missionDao.getActiveMissions(ctx.getCurrentUserId());
             boolean hasActiveMissions = false;
-            boolean hasCompletedMissions = false;
             if (!activeMissions.isEmpty()) {
                 hasActiveMissions = true;
-                InputUtil.printSubsectionSeparator("Active Missions");
-
                 for (Mission mission : activeMissions) {
                     if (mission.getEndTime() != null) {
                         LocalDateTime endTime = mission.getEndTime().toLocalDateTime();
@@ -676,9 +575,6 @@ public class MissionService {
                             long seconds = remainingSeconds % 60;
                             String timeDisplay = String.format("%d:%02d", minutes, seconds);
                             System.out.println("- " + missionInfo + " - " + timeDisplay + " remaining");
-                        } else {
-                            InputUtil.displaySuccess("Mission completed! Units returning: " + missionInfo);
-                            hasCompletedMissions = true;
                         }
                     }
                 }
@@ -686,10 +582,7 @@ public class MissionService {
             if (!hasActiveMissions) {
                 InputUtil.displayInfo("No active missions");
             }
-            if (hasCompletedMissions) {
-                InputUtil.displaySuccess("Some missions completed! Units and rewards will be automatically collected.");
-            }
-            InputUtil.displayInfo("Press enter to go back");
+            InputUtil.displayInfo("\nPress enter to go back");
 
             try {
                 Thread.sleep(1000);
@@ -713,9 +606,57 @@ public class MissionService {
 
     private String getMissionDisplayInfo(Mission mission) {
         StringBuilder info = new StringBuilder();
-        info.append(mission.getType().toString());
+        info.append("[").append(mission.getType().toString()).append("] ");
 
+        MissionResultsDao.MissionResult result = missionResultsDao.getMissionResult(mission.getId());
 
+        if (mission.getType() == MissionType.MINING && result != null) {
+            if (result.getFoodGained() > 0) {
+                info.append("Mining FOOD +").append(result.getFoodGained());
+            } else if (result.getWoodGained() > 0) {
+                info.append("Mining WOOD +").append(result.getWoodGained());
+            } else if (result.getStoneGained() > 0) {
+                info.append("Mining STONE +").append(result.getStoneGained());
+            } else {
+                info.append("Mining");
+            }
+        } else if (mission.getType() == MissionType.ATTACK && result != null) {
+            info.append("Attack Creature");
+            if (result.isSuccess()) {
+                info.append(" (Victory! Reward: ");
+                if (result.getFoodGained() > 0)
+                    info.append("Food +").append(result.getFoodGained()).append(" ");
+                if (result.getWoodGained() > 0)
+                    info.append("Wood +").append(result.getWoodGained()).append(" ");
+                if (result.getStoneGained() > 0)
+                    info.append("Stone +").append(result.getStoneGained());
+                info.append(")");
+            } else {
+                info.append(" (Defeat)");
+            }
+        } else {
+            info.append(mission.getType().toString());
+        }
+
+        Map<UnitType, Integer> units = missionUnitsDao.getMissionUnits(mission.getId());
+        if (!units.isEmpty()) {
+            info.append(" | Units: ");
+            boolean first = true;
+            for (Map.Entry<UnitType, Integer> entry : units.entrySet()) {
+                if (!first)
+                    info.append(", ");
+                info.append(entry.getValue()).append(" ").append(entry.getKey());
+                first = false;
+            }
+        }
+
+        java.time.format.DateTimeFormatter timeFmt = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
+        if (mission.getStartTime() != null) {
+            info.append(" | Start: ").append(mission.getStartTime().toLocalDateTime().format(timeFmt));
+        }
+        if (mission.getEndTime() != null) {
+            info.append(" | End: ").append(mission.getEndTime().toLocalDateTime().format(timeFmt));
+        }
         return info.toString();
     }
 
@@ -818,7 +759,7 @@ public class MissionService {
 
         System.out.println("[0] Cancel");
         System.out.println();
-        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose option"), 0, creatures.size());
+        int choice = InputUtil.readIntWithMenuPrompt(InputUtil.createMenuPrompt("Choose Menu"), 0, creatures.size());
         if (choice == 0) {
             System.out.println("Attack cancelled.");
             return;
