@@ -467,7 +467,7 @@ public class MissionService {
 
         int areaLevel = townhallLevel <= 5 ? 1 : 2;
 
-        long stockAmount = areaLevel == 1 ? 80000 : 200000;
+        long stockAmount = areaLevel == 1 ? 100000 : 250000;
         long maxStock = areaLevel == 1 ? 100000 : 250000;
         int distance = 1 + (int) (Math.random() * 3);
 
