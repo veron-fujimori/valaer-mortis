@@ -174,6 +174,125 @@ public class UnitService {
         }
     }
 
+    private boolean showTrainingProgressForBarrack(Building barrack) {
+        final boolean[] userWantsToExit = { false };
+
+        Thread inputThread = new Thread(() -> {
+            try {
+                InputUtil.waitForEnterInThread();
+                userWantsToExit[0] = true;
+            } catch (Exception e) {
+                userWantsToExit[0] = true;
+            }
+        });
+        inputThread.setDaemon(true);
+        inputThread.start();
+
+        try {
+            while (!userWantsToExit[0]) {
+                List<UnitQueue> activeQueues = unitQueueDao.getQueuesByBuildingId(barrack.getId())
+                        .stream()
+                        .filter(queue -> queue.getStatus() == QueueStatus.TRAINING)
+                        .collect(Collectors.toList());
+
+                if (activeQueues.isEmpty()) {
+                    break;
+                }
+
+                InputUtil.clearTerminal();
+                TerminalArt.printMainHeader(ctx.getCurrentUser(), ctx.resourceService.getCurrentResources());
+
+                displayBarrackInfo(barrack);
+
+                InputUtil.printSubsectionSeparator("Training Progress");
+
+                boolean stillTraining = false;
+                for (UnitQueue queue : activeQueues) {
+                    long remainingSeconds = ctx.progressService.getUnitTrainingRemainingTime(queue);
+                    if (remainingSeconds > 0) {
+                        stillTraining = true;
+                        long minutes = remainingSeconds / 60;
+                        long seconds = remainingSeconds % 60;
+                        String timeDisplay = String.format("%d:%02d", minutes, seconds);
+
+                        UnitType unitType = queue.getUnitType();
+                        System.out.println("┌─ Units in Training : " + queue.getQuantity() + " " + unitType);
+                        System.out.println("└─ Time Remaining    : " + TerminalArt.white(timeDisplay));
+                    }
+                }
+
+                if (!stillTraining) {
+                    InputUtil.displaySuccess("Training completed!\n");
+                    InputUtil.pressEnterToContinue();
+                    break;
+                }
+
+                System.out.println("\nPress Enter to back to Training Troops Page...");
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        } finally {
+            if (inputThread.isAlive()) {
+                inputThread.interrupt();
+            }
+
+            InputUtil.clearInputBuffer();
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        return userWantsToExit[0];
+    }
+
+    private void displayBarrackInfo(Building barrack) {
+        UnitType unitType = getBarrackUnitType(barrack.getType());
+        int capacity = GameConfig.getBarrackCapacity(barrack.getLevel());
+        int currentUnits = getCurrentBarrackUnits(barrack.getId());
+        GameConfig.UnitCost cost = GameConfig.getUnitCost(unitType);
+        GameConfig.UnitStats stats = GameConfig.getUnitStats(unitType);
+
+        InputUtil.printSectionSeparator(unitType + " TRAINING FACILITY");
+
+        InputUtil.printSubsectionSeparator("Facility Information");
+        System.out.println("┌─ Barrack Level    : Level " + barrack.getLevel());
+        System.out.println("├─ Unit Capacity    : " + currentUnits + "/" + capacity + " units");
+
+        String capacityStatus;
+        if (currentUnits >= capacity) {
+            capacityStatus = "FULL";
+        } else if (currentUnits >= capacity * 0.8) {
+            capacityStatus = "NEAR FULL";
+        } else if (currentUnits >= capacity * 0.5) {
+            capacityStatus = "MODERATE";
+        } else {
+            capacityStatus = "AVAILABLE";
+        }
+        System.out.println("└─ Status           : " + capacityStatus);
+
+        InputUtil.printSubsectionSeparator("Unit Specifications");
+        System.out.println("┌─ Unit Stats");
+        System.out.println("│  ├─ HP             : " + stats.hp);
+        System.out.println("│  ├─ Attack Power   : " + stats.attackPower);
+        System.out.println("│  ├─ Defense        : " + stats.defenseModifier);
+        System.out.println("│  ├─ Speed          : " + stats.speed + " units/second");
+        System.out.println("│  └─ Carry Capacity : " + stats.carryCapacity + " resources");
+        System.out.println("│");
+        System.out.println("├─ Training Cost");
+        System.out.println("│  ├─ Food        : " + cost.food + " per unit");
+        System.out.println("│  ├─ Wood        : " + cost.wood + " per unit");
+        System.out.println("│  └─ Stone       : " + cost.stone + " per unit");
+        System.out.println("│");
+        System.out.println("└─ Training Time  : " + cost.timeSeconds + " seconds per unit");
+    }
+
     public void showTrainingProgressLive(UnitQueue queue) {
         final boolean[] isLive = { true };
         final boolean[] userWantsToExit = { false };
@@ -342,238 +461,61 @@ public class UnitService {
     }
 
     private void barrackDetailTrainingMenu(Building barrack) {
-        final boolean[] userWantsToExit = { false };
-        Thread inputThread = null;
-
         while (true) {
             List<UnitQueue> barrackQueues = unitQueueDao.getQueuesByBuildingId(barrack.getId());
             boolean hasActiveTraining = barrackQueues.stream()
                     .anyMatch(queue -> queue.getStatus() == QueueStatus.TRAINING);
-            if (hasActiveTraining && (inputThread == null || !inputThread.isAlive())) {
-                inputThread = new Thread(() -> {
-                    InputUtil.waitForEnterInThread();
-                    userWantsToExit[0] = true;
-                });
-                inputThread.setDaemon(true);
-                inputThread.start();
-            }
-            if (hasActiveTraining && userWantsToExit[0]) {
-                if (inputThread != null && inputThread.isAlive()) {
-                    inputThread.interrupt();
-                }
 
-                InputUtil.clearInputBuffer();
-
-                try {
-                    Thread.sleep(100);
-                } catch (Exception e) {
+            if (hasActiveTraining) {
+                boolean shouldExit = showTrainingProgressForBarrack(barrack);
+                if (shouldExit) {
+                    return;
                 }
-                return;
+                continue;
             }
 
             InputUtil.clearTerminal();
             TerminalArt.printMainHeader(ctx.getCurrentUser(), ctx.resourceService.getCurrentResources());
+
             Building freshBarrack = buildingDao.getBuildingById(barrack.getId());
             if (freshBarrack == null) {
                 InputUtil.displayError("Error: Barrack not found!");
                 InputUtil.pressEnterToContinue();
-
-                if (inputThread != null && inputThread.isAlive()) {
-                    inputThread.interrupt();
-                }
-
-                InputUtil.clearInputBuffer();
-
-                try {
-                    Thread.sleep(100);
-                } catch (Exception e) {
-                }
                 return;
             }
             barrack = freshBarrack;
 
-            UnitType unitType = getBarrackUnitType(barrack.getType());
-            int capacity = GameConfig.getBarrackCapacity(barrack.getLevel());
-            int currentUnits = getCurrentBarrackUnits(barrack.getId());
-            int availableCapacity = capacity - currentUnits;
-            GameConfig.UnitCost cost = GameConfig.getUnitCost(unitType);
-            InputUtil.printSectionSeparator(unitType + " TRAINING FACILITY");
-            InputUtil.printSubsectionSeparator("Facility Information");
-            System.out.println("┌─ Barrack Level    : Level " + barrack.getLevel());
-            System.out.println("├─ Unit Capacity    : " + currentUnits + "/" + capacity + " units");
+            displayBarrackInfo(barrack);
 
-            String capacityStatus;
-            if (currentUnits >= capacity) {
-                capacityStatus = "FULL";
-            } else if (currentUnits >= capacity * 0.8) {
-                capacityStatus = "NEAR FULL";
-            } else if (currentUnits >= capacity * 0.5) {
-                capacityStatus = "MODERATE";
-            } else {
-                capacityStatus = "AVAILABLE";
-            }
-            System.out.println("└─ Status           : " + capacityStatus);
-
-            InputUtil.printSubsectionSeparator("Unit Specifications");
-            GameConfig.UnitStats stats = GameConfig.getUnitStats(unitType);
-            System.out.println("┌─ Unit Stats");
-            System.out.println("│  ├─ HP             : " + stats.hp);
-            System.out.println("│  ├─ Attack Power   : " + stats.attackPower);
-            System.out.println("│  ├─ Defense        : " + stats.defenseModifier);
-            System.out.println("│  ├─ Speed          : " + stats.speed + " units/second");
-            System.out.println("│  └─ Carry Capacity : " + stats.carryCapacity + " resources");
-            System.out.println("│");
-            System.out.println("├─ Training Cost");
-            System.out.println("│  ├─ Food        : " + cost.food + " per unit");
-            System.out.println("│  ├─ Wood        : " + cost.wood + " per unit");
-            System.out.println("│  └─ Stone       : " + cost.stone + " per unit");
-            System.out.println("│");
-            System.out.println("└─ Training Time  : " + cost.timeSeconds + " seconds per unit");
-
-            List<UnitQueue> activeQueues = barrackQueues.stream()
-                    .filter(queue -> queue.getStatus() == QueueStatus.TRAINING)
-                    .collect(Collectors.toList());
-            if (!activeQueues.isEmpty()) {
-                if (inputThread == null || !inputThread.isAlive()) {
-                    inputThread = new Thread(() -> {
-                        InputUtil.waitForEnterInThread();
-                        userWantsToExit[0] = true;
-                    });
-                    inputThread.setDaemon(true);
-                    inputThread.start();
-                }
-                while (!userWantsToExit[0]) {
-                    currentUnits = getCurrentBarrackUnits(barrack.getId());
-                    if (currentUnits >= capacity) {
-                        capacityStatus = "FULL";
-                    } else if (currentUnits >= capacity * 0.8) {
-                        capacityStatus = "NEAR FULL";
-                    } else if (currentUnits >= capacity * 0.5) {
-                        capacityStatus = "MODERATE";
-                    } else {
-                        capacityStatus = "AVAILABLE";
-                    }
-                    activeQueues = unitQueueDao.getQueuesByBuildingId(barrack.getId())
-                            .stream()
-                            .filter(queue -> queue.getStatus() == QueueStatus.TRAINING)
-                            .collect(Collectors.toList());
-
-                    InputUtil.clearTerminal();
-                    TerminalArt.printMainHeader(ctx.getCurrentUser(), ctx.resourceService.getCurrentResources());
-                    InputUtil.printSectionSeparator(unitType + " TRAINING FACILITY");
-                    InputUtil.printSubsectionSeparator("Facility Information");
-                    System.out.println("┌─ Barrack Level    : Level " + barrack.getLevel());
-                    System.out.println("├─ Unit Capacity    : " + currentUnits + "/" + capacity + " units");
-                    System.out.println("└─ Status           : " + capacityStatus);
-
-                    InputUtil.printSubsectionSeparator("Unit Specifications");
-                    System.out.println("┌─ Unit Stats");
-                    System.out.println("│  ├─ HP             : " + stats.hp);
-                    System.out.println("│  ├─ Attack Power   : " + stats.attackPower);
-                    System.out.println("│  ├─ Defense        : " + stats.defenseModifier);
-                    System.out.println("│  ├─ Speed          : " + stats.speed + " units/second");
-                    System.out.println("│  └─ Carry Capacity : " + stats.carryCapacity + " resources");
-                    System.out.println("│");
-                    System.out.println("├─ Training Cost");
-                    System.out.println("│  ├─ Food        : " + cost.food + " per unit");
-                    System.out.println("│  ├─ Wood        : " + cost.wood + " per unit");
-                    System.out.println("│  └─ Stone       : " + cost.stone + " per unit");
-                    System.out.println("│");
-                    System.out.println("└─ Training Time  : " + cost.timeSeconds + " seconds per unit");
-
-                    boolean stillTraining = false;
-                    for (UnitQueue queue : activeQueues) {
-                        long remainingSeconds = ctx.progressService.getUnitTrainingRemainingTime(queue);
-                        if (remainingSeconds > 0) {
-                            if (!stillTraining) {
-                                InputUtil.printSubsectionSeparator("Training Progress");
-                                stillTraining = true;
-                            }
-                            long minutes = remainingSeconds / 60;
-                            long seconds = remainingSeconds % 60;
-                            String timeDisplay = String.format("%d:%02d", minutes, seconds);
-                            System.out.println("┌─ Units in Training : " + queue.getQuantity() + " " + unitType);
-                            System.out.println("└─ Time Remaining    : " + timeDisplay);
-                        }
-                    }
-                    if (!stillTraining) {
-                        System.out.println("\nPress Enter to refresh...");
-                        break;
-                    }
-                    System.out.println("\nPress Enter to back to menu...");
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
-                if (inputThread != null && inputThread.isAlive())
-                    inputThread.interrupt();
-                InputUtil.clearInputBuffer();
-                try {
-                    Thread.sleep(100);
-                } catch (Exception e) {
-                }
-                userWantsToExit[0] = false;
-                continue;
-            }
             if (barrack.getUpgradeEndTime() != null) {
-                InputUtil.clearInputBuffer();
-                String input = InputUtil.readString("\nChoose action");
-                if (input.equals("0")) {
-                    if (inputThread != null && inputThread.isAlive()) {
-                        inputThread.interrupt();
-                    }
-                    InputUtil.clearInputBuffer();
-                    try {
-                        Thread.sleep(100);
-                    } catch (Exception e) {
-                    }
-                    return;
-                }
-                continue;
-            } else if (availableCapacity > 0) {
-                InputUtil.clearInputBuffer();
-                int quantity = InputUtil.readIntInRange("\nHow many units to train (0 to cancel)", 0,
-                        availableCapacity);
-                if (quantity == 0) {
-                    if (inputThread != null && inputThread.isAlive()) {
-                        inputThread.interrupt();
-                    }
-                    InputUtil.clearInputBuffer();
-                    try {
-                        Thread.sleep(100);
-                    } catch (Exception e) {
-                    }
-                    return;
-                }
-                if (quantity < 0) {
-                    InputUtil.displayError("Invalid quantity!");
-                    InputUtil.pressEnterToContinue();
-                    continue;
-                }
-                if (quantity > 0) {
-                    UnitQueue trainingQueue = trainUnits(barrack, quantity);
-                    if (trainingQueue != null) {
-                        showTrainingProgressLive(trainingQueue);
-                        InputUtil.clearInputBuffer();
-                    }
-
-                }
-            } else {
-                InputUtil.displayInfo("\nNo slots are available.");
-                InputUtil.pressEnterToContinue();
-                if (inputThread != null && inputThread.isAlive()) {
-                    inputThread.interrupt();
-                }
-                InputUtil.clearInputBuffer();
-                try {
-                    Thread.sleep(100);
-                } catch (Exception e) {
-                }
+                InputUtil.displayInfo("Barrack is currently upgrading. Cannot train units.");
+                InputUtil.displayInfo("Press Enter to go back to menu...");
+                InputUtil.waitForEnter();
                 return;
             }
+
+            int availableCapacity = getAvailableBarrackCapacity(barrack);
+            if (availableCapacity <= 0) {
+                InputUtil.displayInfo("Barrack is full. Cannot train more units.");
+                InputUtil.displayInfo("Press Enter to go back to menu...");
+                InputUtil.waitForEnter();
+                return;
+            }
+
+            int quantity = InputUtil.readIntInRange(
+                    "\nHow many units to train (0 to go back)",
+                    0,
+                    availableCapacity);
+
+            if (quantity == 0) {
+                return;
+            }
+
+            UnitQueue trainingQueue = trainUnits(barrack, quantity);
+            if (trainingQueue != null) {
+                showTrainingProgressLive(trainingQueue);
+            }
+
         }
     }
 
